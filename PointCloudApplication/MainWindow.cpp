@@ -39,7 +39,7 @@ void MainWindow::initUI() {
     createDockWidget();
 }
 
-void MainWindow::open_file() {
+void MainWindow::openFile() {
 //    QMessageBox::information(this, "Open", "Open a file");
     TRACER;
     QDir dir("/home/zhihui/.autoware/data/map/pointcloud_map");
@@ -54,7 +54,7 @@ void MainWindow::open_file() {
                                         .arg(fileInfo.fileName()));
         std::cout << std::endl;
 
-        osgwidget_->read_data_from_file(fileInfo);
+        osgwidget_->readPCDataFromFile(fileInfo);
     }
 
     osgwidget_->initTerrainManipulator();
@@ -69,7 +69,7 @@ void MainWindow::createMenu() {
     open_file_action = new QAction("Open", this);
     open_file_action->setStatusTip("Open a file");
     open_file_action->setIcon(QIcon("../../resources/file_open.png"));
-    connect(open_file_action, SIGNAL(triggered()), this, SLOT(open_file()));
+    connect(open_file_action, SIGNAL(triggered()), this, SLOT(openFile()));
 
     QMenu *menu = menuBar()->addMenu("File");
     menu->addAction(open_file_action);

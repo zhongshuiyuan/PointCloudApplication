@@ -35,22 +35,23 @@ private:
     void closeEvent(QCloseEvent *event) final {};
 
     //core widget
-    OSGWidget*    osgwidget_;
+    OSGWidget*      osgwidget_;
 
     //other widgets
     QDockWidget*  dock_widget_;
     QTreeWidget*  tree_widget_;
 
     //items
-    QLabel* label_;
-    QAction* open_file_action;
+    QLabel*             label_;
+    QAction*  open_file_action;
 
     Q_DISABLE_COPY(MainWindow);
-signals:
-    void test_signal();
 
-private slots:
-    void open_file();
+Q_SIGNALS:
+
+
+private Q_SLOTS:
+    void openFile();
 };
 
 

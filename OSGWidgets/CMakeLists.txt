@@ -20,7 +20,7 @@ include_directories(../Common)
 link_directories(../cmake-build-release/Common)
 target_link_libraries(OSGWidgets Common)
 
-#osg & pcl
+#osg & pcl & eigen
 include_directories(
         ${OPENSCENEGRAPH_INCLUDE_DIRS}
         ${PCL_INCLUDE_DIRS}

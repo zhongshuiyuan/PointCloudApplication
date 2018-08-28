@@ -19,7 +19,7 @@ set(PointCloudApplication_SRCS
         main.cpp
         MainWindow.cpp MainWindow.h)
 # Tell CMake to create the helloworld executable
-add_executable(PointCloudApplication WIN32 ${PointCloudApplication_SRCS})
+add_executable(PointCloudApplication ${PointCloudApplication_SRCS})
 # Use the Widgets module from Qt 5
 target_link_libraries(PointCloudApplication Qt5::Widgets)
 

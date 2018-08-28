@@ -25,9 +25,12 @@
 #include <osgViewer/CompositeViewer>
 #include <osgGA/TrackballManipulator>
 #include <osgGA/TerrainManipulator>
+#include <osgQt/GraphicsWindowQt>
 
-namespace osgQt
-{ class GraphicsWindowQt; };
+#include <pcl/io/pcd_io.h>
+#include <pcl/common/transforms.h>
+#include <pcl/point_cloud.h>
+#include <pcl/console/time.h>
 
 
 class OSGWidget : public QWidget, public osgViewer::CompositeViewer{
@@ -38,17 +41,20 @@ public:
 
     void init();
     void initTerrainManipulator();
-    bool read_data_from_file(const QFileInfo& file_path);
+    void readPCDataFromFile(const QFileInfo& file_info);
 
 private:
-    void paintEvent(QPaintEvent* event) final;
+    void paintEvent(QPaintEvent*) final;
 
     void initSceneGraph();
     void initCamera();
     void initManipulator();
 
+    osgQt::GraphicsWindowQt* createGraphicsWindow(int x, int y, int w, int h, const std::string& name = "", bool windowDecoration = false);
+    osg::Geode* addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& mapPointCloud, osg::Vec3 color = osg::Vec3(1.0, 1.0, 1.0));
+
     osg::ref_ptr<osg::Switch> root_node_;
-    osg::ref_ptr<osgViewer::Viewer> main_view_;
+    osg::ref_ptr<osgViewer::View> main_view_;
 
     QTimer* update_timer_;
 
@@ -59,17 +65,19 @@ public Q_SLOTS:
 
 };
 
-
 std::ostream& operator<<(std::ostream& os, const osg::Vec3d& point);
 
 class PickHandler : public osgGA::GUIEventHandler
 {
 
 public:
-    PickHandler(){}
-    ~PickHandler(){}
+    PickHandler() :
+        _mx(0),
+        _my(0) {
+    }
+    ~PickHandler() final = default;
 
-    bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) {
+    bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) final{
         auto view = dynamic_cast<osgViewer::View*>(&aa);
         if (!view) return false;
 
@@ -104,33 +112,13 @@ public:
                     osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);
             osgUtil::IntersectionVisitor iv(picker);
 
-//            osg::ref_ptr< osgUtil::LineSegmentIntersector > picker =
-//                    new osgUtil::LineSegmentIntersector(osgUtil::Intersector::WINDOW, ea.getX(), ea.getY());
-//            osgUtil::IntersectionVisitor iv(picker);
-
             view->getCamera()->accept(iv);
 
-            {
-                auto mani = view->getCameraManipulator();
-                auto mani2 = dynamic_cast<osgGA::TrackballManipulator*>(mani);
-//
-//                osg::Vec3d eye, up, center;
-//                view->getCameraManipulator()->getHomePosition(eye, center, up);
-                std::cout << "manipulator position: "<< mani2->getCenter() << " " << mani2->getDistance() << std::endl;
-            }
-
             if (picker->containsIntersections()) {
-                osg::NodePath nodepath = picker->getFirstIntersection().nodePath;
-                for (int i = 0; i < nodepath.size(); i++)
+                osg::NodePath all_node_path = picker->getFirstIntersection().nodePath;
+                for(auto node_path : all_node_path)
                 {
-                	qDebug() << nodepath[i]->libraryName() << nodepath[i]->className() << nodepath[i]->getName().c_str();
-                    //printf("十六进制  %x\n", nodepath[i]->getNodeMask());
-
-                    if (nodepath[i]->className() == "Geode") {
-                        auto boundingbox = nodepath[i]->getBound();
-                        qDebug() << boundingbox._center.x()<< boundingbox._center.y()<< boundingbox._center.z() << boundingbox.radius();
-                        nodepath[i]->setNodeMask(0);
-                    }
+                    qDebug() << node_path->libraryName() << node_path->className() << node_path->getName().c_str();
                 }
             }
         }
