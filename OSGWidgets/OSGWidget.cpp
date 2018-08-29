@@ -7,9 +7,6 @@
 
 #include <QtWidgets/QGridLayout>
 
-#include <OpenThreads/Thread>
-#include <OpenThreads/Condition>
-#include <OpenThreads/ScopedLock>
 #include <osg/Geometry>
 #include <osg/Material>
 #include <osg/Light>
@@ -53,6 +50,45 @@ void OSGWidget::initSceneGraph() {
     root_node_ = new osg::Switch;
     root_node_->setName("root_node");
 
+    osg::ref_ptr<osg::Switch> vmap_node = new osg::Switch;
+    vmap_node->setName("vmap_node");
+    root_node_->addChild(vmap_node);
+    {
+        osg::ref_ptr<osg::Switch> point_cloud_node = new osg::Switch;
+        point_cloud_node->setName("point_cloud_node");
+        vmap_node->addChild(point_cloud_node);
+
+        osg::ref_ptr<osg::Switch> vector_item_node = new osg::Switch;
+        vector_item_node->setName("vector_item_node");
+        vmap_node->addChild(vector_item_node);
+        {
+            osg::ref_ptr<osg::Switch> point_node = new osg::Switch;
+            point_node->setName("point_node");
+            vector_item_node->addChild(point_node);
+
+            osg::ref_ptr<osg::Switch> line_node = new osg::Switch;
+            line_node->setName("line_node");
+            vector_item_node->addChild(line_node);
+        }
+
+
+        osg::ref_ptr<osg::Switch> trace_item_node = new osg::Switch;
+        trace_item_node->setName("trace_item_node");
+        vmap_node->addChild(trace_item_node);
+        {
+            osg::ref_ptr<osg::Switch> lane_node = new osg::Switch;
+            lane_node->setName("lane_node");
+            trace_item_node->addChild(lane_node);
+        }
+    }
+
+    osg::ref_ptr<osg::Switch> text_node = new osg::Switch;
+    text_node->setName("text_node");
+    root_node_->addChild(text_node);
+    {
+
+    }
+
     {
         //离散对象节点光照
         osg::ref_ptr<osg::Light> pclight = new osg::Light;
@@ -67,7 +103,7 @@ void OSGWidget::initSceneGraph() {
         pcss->setMode(GL_MULTISAMPLE_ARB, osg::StateAttribute::ON);
         pcss->setAttribute(pcps, osg::StateAttribute::ON);
 
-        root_node_->setStateSet(pcss.get());
+        vmap_node->setStateSet(pcss.get());
     }
 }
 
@@ -94,7 +130,6 @@ void OSGWidget::initCamera() {
     camera->setNearFarRatio(0.0000002);
     camera->setComputeNearFarMode(osg::CullSettings::COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES);
 //    camera->setClearColor(osg::Vec4(0.84313, 0.84313, 0.89804, 1.0));
-//    qDebug() << "traits:" << traits->width << traits->height;
 
     main_view_->addEventHandler(new osgViewer::StatsHandler);
     main_view_->addEventHandler(new osgGA::StateSetManipulator(camera->getStateSet()));
@@ -102,8 +137,8 @@ void OSGWidget::initCamera() {
     osg::ref_ptr<NodeTreeHandler> nodeTreeHandler = new NodeTreeHandler(root_node_.get());
     main_view_->addEventHandler(nodeTreeHandler.get());
 
-    osg::ref_ptr<PickHandler> pickHandler = new PickHandler;
-    main_view_->addEventHandler(pickHandler);
+//    osg::ref_ptr<PickHandler> pickHandler = new PickHandler;
+//    main_view_->addEventHandler(pickHandler);
 
     main_view_->setSceneData(root_node_.get());
     main_view_->setCameraManipulator(new osgGA::TrackballManipulator);

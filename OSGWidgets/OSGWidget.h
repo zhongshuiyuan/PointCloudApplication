@@ -53,14 +53,12 @@ private:
     osgQt::GraphicsWindowQt* createGraphicsWindow(int x, int y, int w, int h, const std::string& name = "", bool windowDecoration = false);
     osg::Geode* addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& mapPointCloud, osg::Vec3 color = osg::Vec3(1.0, 1.0, 1.0));
 
-    osg::ref_ptr<osg::Switch> root_node_;
     osg::ref_ptr<osgViewer::View> main_view_;
+    osg::ref_ptr<osg::Switch>     root_node_;
 
     QTimer* update_timer_;
 
     Q_DISABLE_COPY(OSGWidget);
-
-
 public Q_SLOTS:
 
 };

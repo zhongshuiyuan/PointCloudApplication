@@ -6,6 +6,6 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(Common_SRCS
         tracer.h
-        VectorMapSingleton.cpp VectorMapSingleton.h)
+        VectorMapSingleton.cpp VectorMapSingleton.h DataStructure.h)
 
 ADD_LIBRARY(Common SHARED ${Common_SRCS})
