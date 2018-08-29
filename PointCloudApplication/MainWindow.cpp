@@ -83,6 +83,7 @@ void MainWindow::createMenu() {
 
     draw_trace_action = new QAction("Draw trace", this);
     draw_trace_action->setIcon(QIcon("../../resources/curve.png"));
+    draw_trace_action->setCheckable(true);
     connect(draw_trace_action, SIGNAL(toggled(bool)), this, SLOT(drawTrace(bool)));
 
 //    QMenu *menu = menuBar()->addMenu("File");

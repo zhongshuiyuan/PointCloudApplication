@@ -6,17 +6,19 @@
 #ifndef POINTCLOUDAPPLICATION_COMMON_H
 #define POINTCLOUDAPPLICATION_COMMON_H
 
-#include <iostream>
 
-#include <QDebug>
+const char root_node_name[] = "root_node";
+const char vmap_node_name[] = "vmap_node";
+const char text_node_name[] = "text_node";
+const char temp_node_name[] = "temp_node";
 
-#include <osg/Vec3d>
+const char point_cloud_node_name[] = "point_cloud_node";
+const char vector_item_node_name[] = "vector_item_node";
+const char trace_item_node_name[] = "trace_item_node";
 
-std::ostream& operator<<(std::ostream& os, const osg::Vec3d& point){
-    os << point.x() << ","
-       << point.y() << ","
-       << point.z();
-    return os;
-}
+const char point_node_name[] = "point_node";
+const char line_node_name[] = "line_node";
+const char lane_node_name[] = "lane_node";
+
 
 #endif //POINTCLOUDAPPLICATION_COMMON_H

@@ -20,9 +20,9 @@
 #include "OSGWidget.h"
 #include "LineEditor.h"
 #include "NodeTreeInfo.h"
+#include "common.h"
 #include "../Common/VectorMapSingleton.h"
 #include "../Common/tracer.h"
-
 
 OSGWidget::OSGWidget(QWidget* parent) :
     QWidget(parent),
@@ -53,46 +53,48 @@ void OSGWidget::initSceneGraph() {
     TRACER;
 
     root_node_ = new osg::Switch;
-    root_node_->setName("root_node");
+    root_node_->setName(root_node_name);
 
     osg::ref_ptr<osg::Switch> vmap_node = new osg::Switch;
-    vmap_node->setName("vmap_node");
+    vmap_node->setName(vmap_node_name);
     root_node_->addChild(vmap_node);
     {
         osg::ref_ptr<osg::Switch> point_cloud_node = new osg::Switch;
-        point_cloud_node->setName("point_cloud_node");
+        point_cloud_node->setName(point_cloud_node_name);
         vmap_node->addChild(point_cloud_node);
 
         osg::ref_ptr<osg::Switch> vector_item_node = new osg::Switch;
-        vector_item_node->setName("vector_item_node");
+        vector_item_node->setName(vector_item_node_name);
         vmap_node->addChild(vector_item_node);
         {
             osg::ref_ptr<osg::Switch> point_node = new osg::Switch;
-            point_node->setName("point_node");
+            point_node->setName(point_node_name);
             vector_item_node->addChild(point_node);
 
             osg::ref_ptr<osg::Switch> line_node = new osg::Switch;
-            line_node->setName("line_node");
+            line_node->setName(line_node_name);
             vector_item_node->addChild(line_node);
         }
 
 
         osg::ref_ptr<osg::Switch> trace_item_node = new osg::Switch;
-        trace_item_node->setName("trace_item_node");
+        trace_item_node->setName(trace_item_node_name);
         vmap_node->addChild(trace_item_node);
         {
             osg::ref_ptr<osg::Switch> lane_node = new osg::Switch;
-            lane_node->setName("lane_node");
+            lane_node->setName(lane_node_name);
             trace_item_node->addChild(lane_node);
         }
     }
 
     osg::ref_ptr<osg::Switch> text_node = new osg::Switch;
-    text_node->setName("text_node");
+    text_node->setName(text_node_name);
     root_node_->addChild(text_node);
-    {
 
-    }
+    osg::ref_ptr<osg::Switch> temp_node = new osg::Switch;
+    temp_node->setName(temp_node_name);
+    root_node_->addChild(temp_node);
+
 
     {
         //离散对象节点光照
@@ -155,7 +157,7 @@ void OSGWidget::initCamera() {
 }
 
 void OSGWidget::initEditor() {
-    line_editor_ = new LineEditor();
+    line_editor_ = new LineEditor(root_node_);
 
 }
 
@@ -165,7 +167,7 @@ void OSGWidget::initTerrainManipulator(){
 
 void OSGWidget::initManipulator() {
     osg::ref_ptr<osgGA::TerrainManipulator> terrain_manipulator = new osgGA::TerrainManipulator;
-    terrain_manipulator->setHomePosition(root_node_->getBound().center() + osg::Vec3(0.0, 0.0, 5000.0),
+    terrain_manipulator->setHomePosition(root_node_->getBound().center() + osg::Vec3(0.0, 0.0, 1000.0), //5000
                                     root_node_->getBound().center(), osg::Vec3(0, 1, 0));
     main_view_->setCameraManipulator(terrain_manipulator.get());
 }

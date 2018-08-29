@@ -5,10 +5,20 @@
 
 #include "LineEditor.h"
 #include "common.h"
+#include "NodeTreeSearch.h"
+#include "../Common/tracer.h"
 
-LineEditor::LineEditor() :
-        _mx(0),
-        _my(0) {
+LineEditor::LineEditor(osg::Switch* root_node) :
+    root_node_(root_node),
+    line_node_(nullptr),
+    temp_node_(nullptr),
+    _mx(0),
+    _my(0) {
+
+    //find related nodes
+    line_node_ = dynamic_cast<osg::Switch*>(findNodeWithName(root_node, line_node_name));
+
+    temp_node_ = dynamic_cast<osg::Switch*>(findNodeWithName(root_node, temp_node_name));
 }
 
 bool LineEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa){
@@ -49,25 +59,26 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 
         if (picker->containsIntersections()) {
             osg::NodePath all_node_path = picker->getFirstIntersection().nodePath;
-            qDebug() << "node path" << all_node_path.size();
+            std::cout << "node path: " << all_node_path.size() << std::endl;
             for(auto node_path : all_node_path)
             {
-                qDebug() << node_path->libraryName() << node_path->className() << node_path->getName().c_str();
+                std::cout << node_path->libraryName() << " " << node_path->className() << " " << node_path->getName().c_str() << std::endl;
             }
 
-            typedef osgUtil::PolytopeIntersector::Intersections Inters;
             auto iter = picker->getIntersections().begin();
             if (iter != picker->getIntersections().end())
             {
-                osg::Vec3 pt;
-                osg::Vec3 selectedPoint(iter->localIntersectionPoint.x(), iter->localIntersectionPoint.y(), iter->localIntersectionPoint.z());
+                osg::Vec3d pt(iter->localIntersectionPoint);
 
-                pt = selectedPoint;
-                //此时iter->primitiveIndex对应selectedPoints节点中的index！
-                int index = iter->primitiveIndex;
-
-                qDebug() << "index:" << index << "x:" << pt.x() << "y:" << pt.y() << "z:" << pt.z();
+                std::cout << "point: " << pt << std::endl;
             }
         }
     }
+}
+
+std::ostream& operator<<(std::ostream& os, const osg::Vec3d& point){
+    os << point.x() << ","
+       << point.y() << ","
+       << point.z();
+    return os;
 }
