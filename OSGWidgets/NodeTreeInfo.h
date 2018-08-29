@@ -42,14 +42,13 @@ public:
         for (int i = 0; i < indent_; i++) std::cout << "  ";
         std::cout << "[" << indent_ + 1 << "]" << node.libraryName() << "::" << node.className() << "::" << node.getName() << std::endl;
 
-        //for (unsigned int n = 0; n < node.getNumDrawables(); n++){
-        //	osg::Drawable* drawable = node.getDrawable(n);
-        //	if (!drawable) continue;
+        for (unsigned int n = 0; n < node.getNumDrawables(); n++){
+        	osg::Drawable* drawable = node.getDrawable(n);
+        	if (!drawable) continue;
 
-        //	for (int i = 0; i <= indent_; i++)std::cout << "  ";
-        //	std::cout << drawable->libraryName() << "::" << drawable->className() << "::" << drawable->getName() << std::endl;
-        //}
-
+        	for (int i = 0; i <= indent_; i++)std::cout << "  ";
+        	std::cout << drawable->libraryName() << "::" << drawable->className() << "::" << drawable->getName() << std::endl;
+        }
 
         indent_++;
         traverse(node);

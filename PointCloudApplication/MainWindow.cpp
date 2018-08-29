@@ -9,6 +9,7 @@
 #include <QtWidgets/QDesktopWidget>
 #include <QtWidgets/QStatusBar>
 #include <QtGui/QIcon>
+#include <QtCore/QDebug>
 #include <QtCore/QString>
 #include <QtCore/QDir>
 #include <QtCore/QFileInfoList>
@@ -17,10 +18,15 @@
 #include "../OSGWidgets/OSGWidget.h"
 #include "../Common/tracer.h"
 
-MainWindow::MainWindow(QWidget *parent)
-    :QMainWindow(parent),
-    open_file_action(nullptr) {
-
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent),
+    osgwidget_(nullptr),
+    dock_widget_(nullptr),
+    tree_widget_(nullptr),
+    label_(nullptr),
+    open_file_action(nullptr),
+    draw_line_action(nullptr),
+    draw_trace_action(nullptr){
     initUI();
 }
 
@@ -67,12 +73,20 @@ void MainWindow::createConnect() {
 void MainWindow::createMenu() {
     TRACER;
     open_file_action = new QAction("Open", this);
-    open_file_action->setStatusTip("Open a file");
     open_file_action->setIcon(QIcon("../../resources/file_open.png"));
     connect(open_file_action, SIGNAL(triggered()), this, SLOT(openFile()));
 
-    QMenu *menu = menuBar()->addMenu("File");
-    menu->addAction(open_file_action);
+    draw_line_action = new QAction("Draw Line", this);
+    draw_line_action->setIcon(QIcon("../../resources/line.png"));
+    draw_line_action->setCheckable(true);
+    connect(draw_line_action, SIGNAL(toggled(bool)), this, SLOT(drawLine(bool)));
+
+    draw_trace_action = new QAction("Draw trace", this);
+    draw_trace_action->setIcon(QIcon("../../resources/curve.png"));
+    connect(draw_trace_action, SIGNAL(toggled(bool)), this, SLOT(drawTrace(bool)));
+
+//    QMenu *menu = menuBar()->addMenu("File");
+//    menu->addAction(open_file_action);
 }
 
 void MainWindow::createToolBar() {
@@ -81,6 +95,9 @@ void MainWindow::createToolBar() {
     QToolBar *toolBar = addToolBar("Tools");
     toolBar->addAction(open_file_action);
     toolBar->addSeparator();
+
+    toolBar->addAction(draw_line_action);
+    toolBar->addAction(draw_trace_action);
 }
 
 void MainWindow::createStatusBar() {
@@ -88,7 +105,7 @@ void MainWindow::createStatusBar() {
 
     label_ = new QLabel("ready");
     label_->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    statusBar()->addWidget(label_);
+//    statusBar()->addWidget(label_);
 }
 
 void MainWindow::createDockWidget() {
@@ -117,4 +134,17 @@ void MainWindow::createDockWidget() {
     //connect(tree_widget_, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(TreeWidgetClicked(QTreeWidgetItem *, int)));
     //connect(tree_widget_, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(TreeWidgetDoubleClicked(QTreeWidgetItem *, int)));
     //connect(tree_widget_, SIGNAL(itemPressed(QTreeWidgetItem *, int)), this, SLOT(TreeWidgetRightedClicked(QTreeWidgetItem *, int)));
+}
+
+void MainWindow::drawLine(bool is_active) {
+    if(is_active)
+    {
+        draw_trace_action->setChecked(false);
+    }
+
+    osgwidget_->activeLineEditor(is_active);
+}
+
+void MainWindow::drawTrace(bool is_active) {
+    qDebug() << "drawTrace";
 }

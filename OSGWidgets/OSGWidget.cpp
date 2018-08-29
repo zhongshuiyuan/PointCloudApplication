@@ -18,15 +18,19 @@
 #include <osgViewer/ViewerEventHandlers>
 
 #include "OSGWidget.h"
+#include "LineEditor.h"
 #include "NodeTreeInfo.h"
 #include "../Common/VectorMapSingleton.h"
 #include "../Common/tracer.h"
+
 
 OSGWidget::OSGWidget(QWidget* parent) :
     QWidget(parent),
     main_view_(nullptr),
     root_node_(nullptr),
+    line_editor_(nullptr),
     update_timer_(nullptr) {
+
 }
 
 void OSGWidget::init() {
@@ -34,6 +38,7 @@ void OSGWidget::init() {
 
     initSceneGraph();
     initCamera();
+    initEditor();
 
     update_timer_ = new QTimer();
     QObject::connect(update_timer_, SIGNAL(timeout()), this, SLOT(update()));
@@ -149,6 +154,11 @@ void OSGWidget::initCamera() {
     this->setLayout(grid);
 }
 
+void OSGWidget::initEditor() {
+    line_editor_ = new LineEditor();
+
+}
+
 void OSGWidget::initTerrainManipulator(){
     this->initManipulator();
 }
@@ -179,13 +189,6 @@ osgQt::GraphicsWindowQt* OSGWidget::createGraphicsWindow(int x, int y, int w, in
     return new osgQt::GraphicsWindowQt(traits.get());
 }
 
-std::ostream& operator<<(std::ostream& os, const osg::Vec3d& point){
-    os << point.x() << ","
-       << point.y() << ","
-       << point.z();
-    return os;
-}
-
 void OSGWidget::readPCDataFromFile(const QFileInfo& file_info){
     pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PCDReader reader;
@@ -194,7 +197,10 @@ void OSGWidget::readPCDataFromFile(const QFileInfo& file_info){
     osg::ref_ptr<osg::Geode> geode = addMapPointCloud(point_cloud, osg::Vec3(0.4, 0.4, 0.4));
     geode->setName(file_info.fileName().toStdString());
 
-    root_node_->addChild(geode.get());
+    auto vmap_node = dynamic_cast<osg::Switch*>(root_node_->getChild(0));
+    auto point_cloud_node = dynamic_cast<osg::Switch*>(vmap_node->getChild(0));
+
+    point_cloud_node->addChild(geode.get());
 }
 
 osg::Geode* OSGWidget::addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& mapPointCloud, osg::Vec3 color){
@@ -220,4 +226,12 @@ osg::Geode* OSGWidget::addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Pt
     geode->addDrawable(geom.get());
 
     return geode.release();
+}
+
+void OSGWidget::activeLineEditor(bool is_active) {
+    if (is_active) {
+        main_view_->addEventHandler(line_editor_);
+    } else {
+        main_view_->removeEventHandler(line_editor_);
+    }
 }

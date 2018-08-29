@@ -44,14 +44,17 @@ private:
     //items
     QLabel*             label_;
     QAction*  open_file_action;
+    QAction*  draw_line_action;
+    QAction* draw_trace_action;
 
     Q_DISABLE_COPY(MainWindow);
-
 Q_SIGNALS:
 
 
 private Q_SLOTS:
     void openFile();
+    void drawLine(bool is_active);
+    void drawTrace(bool is_active);
 };
 
 
