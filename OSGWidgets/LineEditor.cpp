@@ -133,6 +133,7 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
         osgUtil::IntersectionVisitor iv(picker);
         view->getCamera()->accept(iv);
 
+        //intersection check
         if (picker->containsIntersections()) {
 
             osg::NodePath all_node_path = picker->getFirstIntersection().nodePath;
@@ -142,14 +143,16 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 //                std::cout << node_path->libraryName() << " " << node_path->className() << " " << node_path->getName() << std::endl;
 //            }
 
+            //first intersection
             auto iter = picker->getIntersections().begin();
             if (iter != picker->getIntersections().end())
             {
                 osg::Vec3d local_point(iter->localIntersectionPoint);
                 int local_point_index = cur_point_index++;
 
+                //Is it connected with former point ?
                 auto child_node = all_node_path.back();
-                if (child_node->getName() == "point") {  //connection
+                if (child_node->getName() == "point") {
                     child_node->getUserValue("pos", local_point);
                     child_node->getUserValue("id", local_point_index);
                 }
@@ -169,7 +172,7 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
             }
         }
 
-        //draw line
+        //draw temp line
         if (selected_points.size() >= 2)
         {
             osg::Vec3d penultimate_point = std::get<1>(*(selected_points.end() - 2));
@@ -197,9 +200,10 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
         } // end draw
     } //left button
 
+    //right button
     if (ea.getButton() == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON && selected_points.size() >= 2)
     {
-        //recalculate id
+        //recalculate point id
         std::vector<Point> points;
         {
             for (const auto& pair : selected_points) {
@@ -212,13 +216,47 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
                 Point p(index, pos.x(), pos.y(), pos.z());
                 points.emplace_back(p);
             }
-
-            std::cout << "result: " << std::endl;
-            for (auto point : points)
-                std::cout << point << std::endl;
-//            std::copy(points.begin(), points.end(), std::ostream_iterator<Point>(std::cout, "\n"));
-
             VectorMapSingleton::getInstance()->update(points);
+        }
+
+        //generate line | area
+        //line
+        std::vector<Line> lines;
+        {
+            size_t cur_min_line_index = VectorMapSingleton::getInstance()->getMaxLineIndex() + 1;
+            for (int i = 0; i < points.size() - 1; ++i) {
+                const Point& backward_point = points[i];
+                const Point& forward_point = points[i + 1];
+
+                //TODO don't judge overlapping
+                size_t backward_line_id = (i == 0 ? 0 : cur_min_line_index - 1); // start line
+                size_t forward_line_id  = (i == points.size() - 2 ? 0 :cur_min_line_index + 1); // end line
+
+                Line line(cur_min_line_index, backward_point.pid, forward_point.pid, backward_line_id, forward_line_id);
+                lines.emplace_back(line);
+
+                cur_min_line_index++;
+            }
+
+            VectorMapSingleton::getInstance()->update(lines);
+        }
+
+        //area
+        std::vector<Area> areas;
+        {
+            size_t start_point_id = points[0].pid;
+            size_t end_point_id = points.back().pid;
+            if (start_point_id == end_point_id) {
+                size_t cur_min_area_index = VectorMapSingleton::getInstance()->getMaxAreaIndex() + 1;
+
+                size_t start_line_id = lines[0].lid;
+                size_t end_line_id = lines.back().lid;
+
+                Area area(cur_min_area_index, start_line_id, end_line_id);
+                areas.push_back(area);
+
+                VectorMapSingleton::getInstance()->update(areas);
+            }
         }
 
         //redraw line & point
@@ -267,7 +305,23 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
             }
         }
 
+        //debug
+        if (true) {
+            std::cout << "result: " << std::endl;
+            for (auto point : points)
+                std::cout << "point:" << point << std::endl;
+//            std::copy(points.begin(), points.end(), std::ostream_iterator<Point>(std::cout, "\n"));
+            for (auto line : lines)
+                std::cout << "line: " << line << std::endl;
+            for (auto area : areas)
+                std::cout << "area: " << area << std::endl;
+        }
 
+        //emit
+        {
+
+
+        }
         cleanUp(true);
     } //right button
 }
