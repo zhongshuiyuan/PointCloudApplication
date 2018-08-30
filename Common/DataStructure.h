@@ -12,19 +12,17 @@
 #include <fstream>
 #include <sstream>
 
-typedef unsigned int uint;
-
 namespace m_map{
 
 struct Point{
-    uint pid;
+    size_t pid;
     double b, l, h;
     double bx, ly;
 
-    Point(uint id, double x, double y){
+    Point(size_t id, double x, double y, double _h){
         pid = id;
-        bx = x; ly = y;
-        b = l = h = 0;
+        bx = x; ly = y; h = _h;
+        b = l = 0;
     }
 
     Point(){
@@ -34,11 +32,11 @@ struct Point{
 };
 
 struct Line{
-    uint lid;
-    uint bpid, fpid;
-    uint blid, flid;
+    size_t lid;
+    size_t bpid, fpid;
+    size_t blid, flid;
 
-    Line(uint id, uint bp, uint fp, uint bl, uint fl){
+    Line(size_t id, size_t bp, size_t fp, size_t bl, size_t fl){
         lid = id;
         bpid = bp; fpid = fp;
         blid = bl; flid = fl;
@@ -50,11 +48,11 @@ struct Line{
 };
 
 struct Area{
-    uint aid;
-    uint slid;
-    uint elid;
+    size_t aid;
+    size_t slid;
+    size_t elid;
 
-    Area(uint id, uint sl, uint el){
+    Area(size_t id, size_t sl, size_t el){
         aid = id;
         slid = sl; elid = el;
     }
@@ -68,24 +66,24 @@ template <class T>
 class Key
 {
 private:
-    uint id_;
+    size_t id_;
 
 public:
     Key()
     {
     }
 
-    explicit Key(uint id)
+    explicit Key(size_t id)
             : id_(id)
     {
     }
 
-    void setId(uint id)
+    void setId(size_t id)
     {
         id_ = id;
     }
 
-    uint getId() const
+    size_t getId() const
     {
         return id_;
     }
@@ -108,6 +106,10 @@ private:
 public:
     Handle() = default;
 
+    void update(const Key<T>& key, const T& t){
+        map_.insert(std::make_pair(key, t));
+    }
+
     T findByKey(const Key<T>& key) const
     {
         auto it = map_.find(key);
@@ -127,9 +129,22 @@ public:
         return vector;
     }
 
-    bool empty() const
-    {
+    bool empty() const {
         return map_.empty();
+    }
+
+    size_t findMaxIndex() const {
+        size_t index = 0;
+        for (const auto& pair : map_)
+        {
+            size_t cur_index = std::get<0>(pair).getId();
+            if (cur_index > index) index = cur_index;
+        }
+        return index;
+    }
+
+    size_t size() const {
+        return map_.size();
     }
 };
 

@@ -12,6 +12,45 @@ VectorMapSingleton* VectorMapSingleton::getInstance() {
     return instance;
 }
 
+size_t VectorMapSingleton::getMaxPointIndex() const {
+    return points_.findMaxIndex();
+}
+
+size_t VectorMapSingleton::getMaxLineIndex() const {
+    return lines_.findMaxIndex();
+}
+
+size_t VectorMapSingleton::getMaxAreaIndex() const {
+    return areas_.findMaxIndex();
+}
+
+void VectorMapSingleton::update(const std::vector<Point> &points) {
+    for (const auto& point : points)
+    {
+        if (point.pid == 0)
+            continue;
+        points_.update(Key<Point>(point.pid), point);
+    }
+}
+
+void VectorMapSingleton::update(const std::vector<Line> &lines) {
+    for (const auto& line : lines)
+    {
+        if (line.lid == 0)
+            continue;
+        lines_.update(Key<Line>(line.lid), line);
+    }
+}
+
+void VectorMapSingleton::update(const std::vector<Area> &areas) {
+    for (const auto& area : areas)
+    {
+        if (area.aid == 0)
+            continue;
+        areas_.update(Key<Area>(area.aid), area);
+    }
+}
+
 Point VectorMapSingleton::findByID(const Key<Point> &key) const {
     return points_.findByKey(key);
 }

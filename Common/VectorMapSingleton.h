@@ -47,12 +47,13 @@ class VectorMapSingleton {
 public:
     static VectorMapSingleton* getInstance();
 
-private:
-    static VectorMapSingleton* instance;
+    size_t getMaxPointIndex() const;
+    size_t getMaxLineIndex() const;
+    size_t getMaxAreaIndex() const;
 
-    Handle<Point> points_;
-    Handle<Line>  lines_;
-    Handle<Area>  areas_;
+    void update(const std::vector<Point>& points);
+    void update(const std::vector<Line>& lines);
+    void update(const std::vector<Area>& areas);
 
     Point findByID(const Key<Point>& key) const;
     Line  findByID(const Key<Line>& key) const;
@@ -61,6 +62,13 @@ private:
     std::vector<Point> findByFilter(const Filter<Point>& filter) const;
     std::vector<Line>  findByFilter(const Filter<Line>& filter) const;
     std::vector<Area>  findByFilter(const Filter<Area>& filter) const;
+
+private:
+    static VectorMapSingleton* instance;
+
+    Handle<Point> points_;
+    Handle<Line>  lines_;
+    Handle<Area>  areas_;
 };
 
 std::ostream& operator<<(std::ostream& os, const Point& obj);

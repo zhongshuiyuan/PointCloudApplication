@@ -30,6 +30,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/console/time.h>
 
+#include "LineEditor.h" //TODO 优化
 class LineEditor;
 
 class OSGWidget : public QWidget, public osgViewer::CompositeViewer{
@@ -58,7 +59,7 @@ private:
     osg::ref_ptr<osgViewer::View> main_view_;
     osg::ref_ptr<osg::Switch>     root_node_;
 
-    LineEditor*   line_editor_;
+    osg::ref_ptr<LineEditor>    line_editor_;
     QTimer* update_timer_;
 
     Q_DISABLE_COPY(OSGWidget);

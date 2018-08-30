@@ -18,7 +18,6 @@
 #include <osgViewer/ViewerEventHandlers>
 
 #include "OSGWidget.h"
-#include "LineEditor.h"
 #include "NodeTreeInfo.h"
 #include "common.h"
 #include "../Common/VectorMapSingleton.h"
@@ -95,7 +94,6 @@ void OSGWidget::initSceneGraph() {
     temp_node->setName(temp_node_name);
     root_node_->addChild(temp_node);
 
-
     {
         //离散对象节点光照
         osg::ref_ptr<osg::Light> pclight = new osg::Light;
@@ -167,7 +165,7 @@ void OSGWidget::initTerrainManipulator(){
 
 void OSGWidget::initManipulator() {
     osg::ref_ptr<osgGA::TerrainManipulator> terrain_manipulator = new osgGA::TerrainManipulator;
-    terrain_manipulator->setHomePosition(root_node_->getBound().center() + osg::Vec3(0.0, 0.0, 1000.0), //5000
+    terrain_manipulator->setHomePosition(root_node_->getBound().center() + osg::Vec3(0.0, 0.0, 200.0), //5000
                                     root_node_->getBound().center(), osg::Vec3(0, 1, 0));
     main_view_->setCameraManipulator(terrain_manipulator.get());
 }
