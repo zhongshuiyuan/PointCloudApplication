@@ -1,10 +1,11 @@
 //
-// Created by WuKun on 8/29/18.
+// Created by WuKun on 8/30/18.
 // Contact me:wk707060335@gmail.com
 //
 
-#ifndef POINTCLOUDAPPLICATION_LINEEDITOR_H
-#define POINTCLOUDAPPLICATION_LINEEDITOR_H
+#ifndef POINTCLOUDAPPLICATION_TRACEEDITOR_H
+#define POINTCLOUDAPPLICATION_TRACEEDITOR_H
+
 
 #include <iostream>
 
@@ -14,18 +15,19 @@
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIActionAdapter>
 
-class LineEditor : public osgGA::GUIEventHandler
+class TraceEditor : public osgGA::GUIEventHandler
 {
 public:
-    explicit LineEditor(osg::Switch* root_node);
-    ~LineEditor() final;
+    explicit TraceEditor(osg::Switch* root_node);
+    ~TraceEditor() final;
 
     bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) final;
     void pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view);
 
 private:
-    void updateIndex(); //update cur_point_index in case traceEditor add new points!
+    void updateIndex(); //update cur_point_index in case lineEditor add new points!
     void cleanUp(bool all = true);
+    std::vector<osg::Vec3d> calculateInterpolationPoints(const osg::Vec3d& start_point, const osg::Vec3d& end_point) const;
 
     osg::ref_ptr<osg::Switch> root_node_;
     osg::ref_ptr<osg::Switch> temp_node_;
@@ -40,6 +42,5 @@ protected:
     float _mx,_my;
 };
 
-std::ostream& operator<<(std::ostream& os, const osg::Vec3d& point);
 
-#endif //POINTCLOUDAPPLICATION_LINEEDITOR_H
+#endif //POINTCLOUDAPPLICATION_TRACEEDITOR_H

@@ -30,8 +30,9 @@
 #include <pcl/point_cloud.h>
 #include <pcl/console/time.h>
 
-#include "LineEditor.h" //TODO 优化
-class LineEditor;
+#include "LineEditor.h" //TODO 优化头文件
+#include "TraceEditor.h"
+//class LineEditor;
 
 class OSGWidget : public QWidget, public osgViewer::CompositeViewer{
     Q_OBJECT
@@ -44,6 +45,7 @@ public:
     void readPCDataFromFile(const QFileInfo& file_info);
 
     void activeLineEditor(bool is_active);
+    void activeTraceEditor(bool is_active);
 
 private:
     void paintEvent(QPaintEvent*) final;
@@ -60,6 +62,7 @@ private:
     osg::ref_ptr<osg::Switch>     root_node_;
 
     osg::ref_ptr<LineEditor>    line_editor_;
+    osg::ref_ptr<TraceEditor>  trace_editor_;
     QTimer* update_timer_;
 
     Q_DISABLE_COPY(OSGWidget);

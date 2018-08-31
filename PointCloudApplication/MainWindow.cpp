@@ -86,13 +86,12 @@ void MainWindow::createMenu() {
     draw_trace_action->setCheckable(true);
     connect(draw_trace_action, SIGNAL(toggled(bool)), this, SLOT(drawTrace(bool)));
 
+
 //    QMenu *menu = menuBar()->addMenu("File");
 //    menu->addAction(open_file_action);
 }
 
 void MainWindow::createToolBar() {
-    TRACER;
-
     QToolBar *toolBar = addToolBar("Tools");
     toolBar->addAction(open_file_action);
     toolBar->addSeparator();
@@ -102,8 +101,6 @@ void MainWindow::createToolBar() {
 }
 
 void MainWindow::createStatusBar() {
-    TRACER;
-
     label_ = new QLabel("ready");
     label_->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 //    statusBar()->addWidget(label_);
@@ -138,8 +135,7 @@ void MainWindow::createDockWidget() {
 }
 
 void MainWindow::drawLine(bool is_active) {
-    if(is_active)
-    {
+    if (is_active) {
         draw_trace_action->setChecked(false);
     }
 
@@ -147,5 +143,9 @@ void MainWindow::drawLine(bool is_active) {
 }
 
 void MainWindow::drawTrace(bool is_active) {
-    qDebug() << "drawTrace";
+    if (is_active) {
+        draw_line_action->setChecked(false);
+    }
+
+    osgwidget_->activeTraceEditor(is_active);
 }

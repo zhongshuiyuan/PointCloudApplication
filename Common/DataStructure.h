@@ -62,6 +62,55 @@ struct Area{
     }
 };
 
+struct Node {
+    size_t nid;
+    size_t pid;
+
+    Node() {
+        nid = pid = 0;
+    }
+    Node(size_t n, size_t p) {
+        nid = n;
+        pid = p;
+    }
+};
+
+struct Lane {
+    size_t lnid, did;
+    size_t blid, flid;
+    size_t bnid, fnid;
+    size_t blid2, flid2, blid3, flid3;
+
+    Lane() {
+        lnid = did = blid = flid = bnid = fnid = 0;
+        blid2 = flid2 = blid3 = flid3 = 0;
+    }
+
+    Lane(size_t _lnid, size_t _did, size_t _blid, size_t _flid, size_t _bnid, size_t _fnid) {
+        lnid = _lnid; did = _did;
+        blid = _blid; flid = _flid;
+        bnid = _bnid; fnid = _fnid;
+        blid2 = flid2 = blid3 = flid3 = 0;
+    }
+};
+
+struct dtLane {
+    size_t did;
+    size_t pid;
+    double apara;
+    double r;
+
+    dtLane() {
+        did = pid = 0;
+        apara = r = 0;
+    }
+
+    dtLane(size_t _did, size_t _pid, double _a, double _r) {
+        did = _did; pid = _pid;
+        apara = _a; r = _r;
+    }
+};
+
 template <class T>
 class Key
 {
@@ -69,9 +118,7 @@ private:
     size_t id_;
 
 public:
-    Key()
-    {
-    }
+    Key() = default;
 
     explicit Key(size_t id)
             : id_(id)

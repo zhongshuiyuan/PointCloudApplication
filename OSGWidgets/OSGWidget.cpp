@@ -28,6 +28,7 @@ OSGWidget::OSGWidget(QWidget* parent) :
     main_view_(nullptr),
     root_node_(nullptr),
     line_editor_(nullptr),
+    trace_editor_(nullptr),
     update_timer_(nullptr) {
 
 }
@@ -156,7 +157,7 @@ void OSGWidget::initCamera() {
 
 void OSGWidget::initEditor() {
     line_editor_ = new LineEditor(root_node_);
-
+    trace_editor_ = new TraceEditor(root_node_);
 }
 
 void OSGWidget::initTerrainManipulator(){
@@ -233,5 +234,13 @@ void OSGWidget::activeLineEditor(bool is_active) {
         main_view_->addEventHandler(line_editor_);
     } else {
         main_view_->removeEventHandler(line_editor_);
+    }
+}
+
+void OSGWidget::activeTraceEditor(bool is_active) {
+    if (is_active) {
+        main_view_->addEventHandler(trace_editor_);
+    } else {
+        main_view_->removeEventHandler(trace_editor_);
     }
 }

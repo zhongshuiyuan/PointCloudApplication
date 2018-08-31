@@ -44,21 +44,19 @@ public:
         return node_;
     }
 
+    static osg::Node* findNodeWithName(osg::Switch* root_node, const char name[]) {
+        auto visitor= new NodeTreeSearch(name);
+        root_node->accept(*visitor);
+        auto node = visitor->getNode();
+
+        if (!node) std::cout << "aha?" << std::endl;
+
+        return node;
+    }
+
 private:
     osg::Node*  node_;
     std::string name_;
 };
-
-
-osg::Node* findNodeWithName(osg::Switch* root_node, const char name[]) {
-
-    auto visitor= new NodeTreeSearch(name);
-    root_node->accept(*visitor);
-    auto node = visitor->getNode();
-
-    if (!node) std::cout << "aha?" << std::endl;
-
-    return node;
-}
 
 #endif //POINTCLOUDAPPLICATION_NODETREESEARCH_H
