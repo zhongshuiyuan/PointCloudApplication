@@ -151,7 +151,11 @@ std::ostream& operator<<(std::ostream& os, const Point& obj)
        << obj.l << ","
        << obj.h << ","
        << obj.bx << ","
-       << obj.ly << ",";
+       << obj.ly << ","
+       << obj.ref << ","
+       << obj.mcode1 << ","
+       << obj.mcode2 << ","
+       << obj.mcode3;
     return os;
 }
 
@@ -188,19 +192,38 @@ std::ostream& operator<<(std::ostream& os, const Lane& obj)
        << obj.flid << ","
        << obj.bnid << ","
        << obj.fnid << ","
+       << obj.jct << ","
        << obj.blid2 << ","
        << obj.blid3 << ","
+       << obj.blid4 << ","
        << obj.flid2 << ","
-       << obj.flid3;
+       << obj.flid3 << ","
+       << obj.flid4 << ","
+       << obj.clossid << ","
+       << obj.span << ","
+       << obj.lcnt << ","
+       << obj.lno << ","
+       << obj.lanetype << ","
+       << obj.limitvel << ","
+       << obj.refvel << ","
+       << obj.roadsecid << ","
+       << obj.lanecfgfg << ","
+       << obj.linkwaid;
     return os;
 }
 
 std::ostream& operator<<(std::ostream& os, const dtLane& obj)
 {
     os << obj.did << ","
+       << obj.dist << ","
        << obj.pid << ","
+       << obj.dir << ","
        << obj.apara << ","
-       << obj.r;
+       << obj.r << ","
+       << obj.slope << ","
+       << obj.cant << ","
+       << obj.lw << ","
+       << obj.rw;
     return os;
 }
 
@@ -218,6 +241,10 @@ std::istream& operator>>(std::istream& is, Point& obj)
     obj.h = std::stod(columns[3]);
     obj.bx = std::stod(columns[4]);
     obj.ly = std::stod(columns[5]);
+    obj.ref = std::stoi(columns[6]);
+    obj.mcode1 = std::stoi(columns[7]);
+    obj.mcode2 = std::stoi(columns[8]);
+    obj.mcode3 = std::stoi(columns[9]);
     return is;
 }
 
@@ -280,9 +307,58 @@ std::istream& operator>>(std::istream& is, Lane& obj)
     obj.flid = std::stoi(columns[3]);
     obj.bnid = std::stoi(columns[4]);
     obj.fnid = std::stoi(columns[5]);
+    obj.jct = std::stoi(columns[6]);
     obj.blid2 = std::stoi(columns[7]);
     obj.blid3 = std::stoi(columns[8]);
+    obj.blid4 = std::stoi(columns[9]);
     obj.flid2 = std::stoi(columns[10]);
     obj.flid3 = std::stoi(columns[11]);
+    obj.flid4 = std::stoi(columns[12]);
+    obj.clossid = std::stoi(columns[13]);
+    obj.span = std::stod(columns[14]);
+    obj.lcnt = std::stoi(columns[15]);
+    obj.lno = std::stoi(columns[16]);
+    if (n == 17)
+    {
+        obj.lanetype = 0;
+        obj.limitvel = 0;
+        obj.refvel = 0;
+        obj.roadsecid = 0;
+        obj.lanecfgfg = 0;
+        obj.linkwaid = 0;
+        return is;
+    }
+    obj.lanetype = std::stoi(columns[17]);
+    obj.limitvel = std::stoi(columns[18]);
+    obj.refvel = std::stoi(columns[19]);
+    obj.roadsecid = std::stoi(columns[20]);
+    obj.lanecfgfg = std::stoi(columns[21]);
+    if (n == 22)
+    {
+        obj.linkwaid = 0;
+        return is;
+    }
+    obj.linkwaid = std::stoi(columns[22]);
+    return is;
+}
+
+std::istream& operator>>(std::istream& is, dtLane& obj)
+{
+    std::vector<std::string> columns;
+    std::string column;
+    while (std::getline(is, column, ','))
+    {
+        columns.push_back(column);
+    }
+    obj.did = std::stoi(columns[0]);
+    obj.dist = std::stod(columns[1]);
+    obj.pid = std::stoi(columns[2]);
+    obj.dir = std::stod(columns[3]);
+    obj.apara = std::stod(columns[4]);
+    obj.r = std::stod(columns[5]);
+    obj.slope = std::stod(columns[6]);
+    obj.cant = std::stod(columns[7]);
+    obj.lw = std::stod(columns[8]);
+    obj.rw = std::stod(columns[9]);
     return is;
 }

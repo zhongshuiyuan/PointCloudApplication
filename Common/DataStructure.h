@@ -21,15 +21,19 @@ struct Point{
     double b, l, h;
     double bx, ly;
 
+    size_t ref, mcode1, mcode2, mcode3;
+
     Point(size_t id, double x, double y, double _h){
         pid = id;
         bx = x; ly = y; h = _h;
         b = l = 0;
+        ref = mcode1 = mcode2 = mcode3 = 0;
     }
 
     Point(){
         pid = 0;
-        b = l = h = bx = ly = 0;
+        b = l = h = bx = ly = 0;;
+        ref = mcode1 = mcode2 = mcode3 = 0;
     }
 };
 
@@ -81,35 +85,49 @@ struct Lane {
     size_t lnid, did;
     size_t blid, flid;
     size_t bnid, fnid;
-    size_t blid2, flid2, blid3, flid3;
+    size_t jct;
+    size_t blid2, flid2, blid3, flid3, blid4, flid4;
+    size_t clossid, span, lcnt, lno, lanetype, limitvel, refvel, roadsecid, lanecfgfg, linkwaid;
+
 
     Lane() {
         lnid = did = blid = flid = bnid = fnid = 0;
-        blid2 = flid2 = blid3 = flid3 = 0;
+        jct = blid2 = flid2 = blid3 = flid3 = blid4 = flid4 = 0;
+
+        clossid = span = lcnt = lno = lanetype = limitvel = refvel = roadsecid = lanecfgfg = linkwaid = 0;
     }
 
     Lane(size_t _lnid, size_t _did, size_t _blid, size_t _flid, size_t _bnid, size_t _fnid) {
         lnid = _lnid; did = _did;
         blid = _blid; flid = _flid;
         bnid = _bnid; fnid = _fnid;
-        blid2 = flid2 = blid3 = flid3 = 0;
+        jct = blid2 = flid2 = blid3 = flid3 = blid4 = flid4 = 0;
+
+        clossid = span = lcnt = lno = lanetype = limitvel = refvel = roadsecid = lanecfgfg = linkwaid = 0;
     }
 };
 
 struct dtLane {
     size_t did;
+    double dist;
     size_t pid;
+    double dir;
     double apara;
     double r;
 
+    double slope, cant, lw, rw;
+
     dtLane() {
         did = pid = 0;
-        apara = r = 0;
+        dist = dir = apara = r = 0;
+        slope = cant = lw = rw = 0;
     }
 
     dtLane(size_t _did, size_t _pid, double _a, double _r) {
         did = _did; pid = _pid;
         apara = _a; r = _r;
+        dist = dir = 0;
+        slope = cant = lw = rw = 0;
     }
 };
 
