@@ -16,9 +16,11 @@ const char point_cloud_node_name[] = "point_cloud_node";
 const char vector_item_node_name[] = "vector_item_node";
 const char trace_item_node_name[] = "trace_item_node";
 
-const char point_node_name[] = "point_node";
-const char line_node_name[] = "line_node";
-const char lane_node_name[] = "lane_node";
-
+const char point_text_node_name[] = "point_text_node";
+const char line_text_node_name[] = "line_text_node";
+const char area_text_node_name[] = "area_text_node";
+const char node_text_node_name[] = "node_text_node";
+const char lane_text_node_name[] = "lane_text_node";
+const char dtlane_text_node_name[] = "dtlane_text_node";
 
 #endif //POINTCLOUDAPPLICATION_COMMON_H

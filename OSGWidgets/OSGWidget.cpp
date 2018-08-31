@@ -17,9 +17,10 @@
 #include <osgGA/StateSetManipulator>
 #include <osgViewer/ViewerEventHandlers>
 
+#include "common.h"
 #include "OSGWidget.h"
 #include "NodeTreeInfo.h"
-#include "common.h"
+#include "TextController.h"
 #include "../Common/VectorMapSingleton.h"
 #include "../Common/tracer.h"
 
@@ -66,30 +67,40 @@ void OSGWidget::initSceneGraph() {
         osg::ref_ptr<osg::Switch> vector_item_node = new osg::Switch;
         vector_item_node->setName(vector_item_node_name);
         vmap_node->addChild(vector_item_node);
-        {
-            osg::ref_ptr<osg::Switch> point_node = new osg::Switch;
-            point_node->setName(point_node_name);
-            vector_item_node->addChild(point_node);
-
-            osg::ref_ptr<osg::Switch> line_node = new osg::Switch;
-            line_node->setName(line_node_name);
-            vector_item_node->addChild(line_node);
-        }
-
 
         osg::ref_ptr<osg::Switch> trace_item_node = new osg::Switch;
         trace_item_node->setName(trace_item_node_name);
         vmap_node->addChild(trace_item_node);
-        {
-            osg::ref_ptr<osg::Switch> lane_node = new osg::Switch;
-            lane_node->setName(lane_node_name);
-            trace_item_node->addChild(lane_node);
-        }
     }
 
     osg::ref_ptr<osg::Switch> text_node = new osg::Switch;
     text_node->setName(text_node_name);
     root_node_->addChild(text_node);
+    {
+        osg::ref_ptr<osg::Switch> point_text_node = new osg::Switch;
+        point_text_node->setName(point_text_node_name);
+        text_node->addChild(point_text_node);
+
+        osg::ref_ptr<osg::Switch> line_text_node = new osg::Switch;
+        line_text_node->setName(line_text_node_name);
+        text_node->addChild(line_text_node);
+
+        osg::ref_ptr<osg::Switch> area_text_node = new osg::Switch;
+        area_text_node->setName(area_text_node_name);
+        text_node->addChild(area_text_node);
+
+        osg::ref_ptr<osg::Switch> node_text_node = new osg::Switch;
+        node_text_node->setName(node_text_node_name);
+        text_node->addChild(node_text_node);
+
+        osg::ref_ptr<osg::Switch> lane_text_node = new osg::Switch;
+        lane_text_node->setName(lane_text_node_name);
+        text_node->addChild(lane_text_node);
+
+        osg::ref_ptr<osg::Switch> dtlane_text_node = new osg::Switch;
+        dtlane_text_node->setName(dtlane_text_node_name);
+        text_node->addChild(dtlane_text_node);
+    }
 
     osg::ref_ptr<osg::Switch> temp_node = new osg::Switch;
     temp_node->setName(temp_node_name);
@@ -143,8 +154,8 @@ void OSGWidget::initCamera() {
     osg::ref_ptr<NodeTreeHandler> nodeTreeHandler = new NodeTreeHandler(root_node_.get());
     main_view_->addEventHandler(nodeTreeHandler.get());
 
-//    osg::ref_ptr<PickHandler> pickHandler = new PickHandler;
-//    main_view_->addEventHandler(pickHandler);
+    osg::ref_ptr<TextController> textController = new TextController(root_node_.get());
+    main_view_->addEventHandler(textController);
 
     main_view_->setSceneData(root_node_.get());
     main_view_->setCameraManipulator(new osgGA::TrackballManipulator);

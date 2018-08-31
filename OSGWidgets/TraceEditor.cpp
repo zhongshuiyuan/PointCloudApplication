@@ -11,6 +11,7 @@
 
 #include <osg/ValueObject>
 #include <osg/ShapeDrawable>
+#include <osgText/Text>
 
 #include "TraceEditor.h"
 #include "common.h"
@@ -25,13 +26,10 @@ using m_map::Point;
 TraceEditor::TraceEditor(osg::Switch* root_node) :
         root_node_(root_node),
         temp_node_(nullptr),
-        line_node_(nullptr),
         temp_line_geode_(nullptr),
         _mx(0),
         _my(0) {
 
-    //find related nodes
-    line_node_ = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node, line_node_name));
     temp_node_ = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node, temp_node_name));
 }
 
@@ -314,9 +312,12 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
 
         //redraw line, point
         {
+            osg::ref_ptr<osg::Switch> trace_item_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, trace_item_node_name));
+
+            static int node_index = 0;
             osg::ref_ptr<osg::Switch> oneDrawNode = new osg::Switch;
-            oneDrawNode->setName("test");
-            line_node_->addChild(oneDrawNode);
+            oneDrawNode->setName("trace" + std::to_string(node_index++));
+            trace_item_node->addChild(oneDrawNode);
             //line
             {
                 osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
@@ -361,22 +362,50 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
         }
 
         //debug
-        if (true) {
+        if (false) {
             std::cout << "--------result---------" << std::endl;
             for (auto node : nodes)
                 std::cout << "node: " << node << std::endl;
-//            for (auto point : points)
-//                std::cout << "point:" << point << std::endl;
             for (auto lane : lanes)
                 std::cout << "lane: " << lane << std::endl;
             for (auto dtlane : dtlanes)
                 std::cout << "dtlane: " << dtlane << std::endl;
         }
 
+        //text
+        {
+            osg::ref_ptr<osg::Switch> node_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, node_text_node_name));
+            for (const auto& node: nodes) {
+                const auto& point = VectorMapSingleton::getInstance()->findByID(Key<Point>(node.pid));
+
+                osg::Vec3d pos(point.bx, point.ly, point.h);
+                std::string name = std::to_string(node.nid);
+                osg::Vec4f color(0.0, 1.0, 0.0, 0.5);
+
+                node_text_node->addChild(drawTextGeode(pos, name, color));
+            }
+
+            osg::ref_ptr<osg::Switch> lane_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, lane_text_node_name));
+            for (const auto& lane : lanes) {
+                const auto& backward_node = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.bnid));
+                const auto& forward_node = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.fnid));
+
+                const auto& backward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(backward_node.pid));
+                const auto& forward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(forward_node.pid));
+
+                osg::Vec3d pos1(backward_point.bx, backward_point.ly, backward_point.h);
+                osg::Vec3d pos2(forward_point.bx, forward_point.ly, forward_point.h);
+
+                osg::Vec3d pos = ( pos1 + pos2 ) / 2;
+                std::string name = std::to_string(lane.lnid);
+                osg::Vec4f color(1.0, 0.0, 0.0, 0.5);
+
+                lane_text_node->addChild(drawTextGeode(pos, name, color));
+            }
+        }
+
         //emit
         {
-
-
         }
 
         cleanUp(true);
@@ -396,6 +425,7 @@ void TraceEditor::cleanUp(bool all) {
 }
 
 void TraceEditor::updateIndex() {
+    //update cur_point_index in case lineEditor add new points!
     cur_point_index = VectorMapSingleton::getInstance()->getMaxPointIndex() + 1;
 }
 
@@ -438,4 +468,21 @@ bool TraceEditor::isCurveLine(const point_pair_vec& points) const {
     if (angle < 30 and angle > -30) return false;
 
     return true;
+}
+
+
+osg::ref_ptr<osg::Geode> TraceEditor::drawTextGeode(const osg::Vec3d& pos,
+                                       const std::string& content, const osg::Vec4f& color) const {
+    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+    geode->setName(content);
+
+    osg::ref_ptr<osgText::Text> text = new osgText::Text;
+    text->setCharacterSize(0.2);
+    text->setAxisAlignment( osgText::TextBase::XY_PLANE );
+    text->setPosition(pos);
+    text->setText(content);
+    text->setColor(color);
+
+    geode->addDrawable(text);
+    return geode.release();
 }

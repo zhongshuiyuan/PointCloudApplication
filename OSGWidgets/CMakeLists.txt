@@ -11,7 +11,7 @@ find_package(Qt5Core CONFIG REQUIRED)
 find_package(Qt5Gui CONFIG REQUIRED)
 find_package(Qt5OpenGL REQUIRED)
 set(OSGWidgets_SRCS
-        OSGWidget.cpp OSGWidget.h NodeTreeInfo.h LineEditor.cpp LineEditor.h common.h NodeTreeSearch.h TraceEditor.cpp TraceEditor.h)
+        OSGWidget.cpp OSGWidget.h NodeTreeInfo.h LineEditor.cpp LineEditor.h common.h NodeTreeSearch.h TraceEditor.cpp TraceEditor.h TextController.h)
 add_library(OSGWidgets SHARED ${OSGWidgets_SRCS})
 target_link_libraries(OSGWidgets Qt5::Widgets Qt5::Core)
 

@@ -10,6 +10,7 @@
 
 #include <osg/ValueObject>
 #include <osg/ShapeDrawable>
+#include <osgText/Text>
 
 #include "LineEditor.h"
 #include "common.h"
@@ -23,14 +24,11 @@ using m_map::Point;
 LineEditor::LineEditor(osg::Switch* root_node) :
     root_node_(root_node),
     temp_node_(nullptr),
-    line_node_(nullptr),
     temp_line_geode_(nullptr),
     cur_point_index(0),
     _mx(0),
     _my(0) {
 
-    //find related nodes
-    line_node_ = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node, line_node_name));
     temp_node_ = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node, temp_node_name));
 }
 
@@ -254,9 +252,12 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 
         //redraw line, point
         {
+            osg::ref_ptr<osg::Switch> vector_item_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, vector_item_node_name));
+
+            static int node_index = 0;
             osg::ref_ptr<osg::Switch> oneDrawNode = new osg::Switch;
-            oneDrawNode->setName("test");  //TODO group name
-            line_node_->addChild(oneDrawNode);
+            oneDrawNode->setName("vec" + std::to_string(node_index++));  //TODO design group name
+            vector_item_node->addChild(oneDrawNode);
             //line
             {
                 osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
@@ -299,7 +300,7 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
         }
 
         //debug
-        if (true) {
+        if (false) {
             std::cout << "result: " << std::endl;
             for (auto point : points)
                 std::cout << "point:" << point << std::endl;
@@ -310,10 +311,35 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
                 std::cout << "area: " << area << std::endl;
         }
 
+        //text
+        {
+            osg::ref_ptr<osg::Switch> point_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, point_text_node_name));
+            for (const auto& point: points) {
+                osg::Vec3d pos(point.bx, point.ly, point.h);
+                std::string name = std::to_string(point.pid);
+                osg::Vec4f color(0.0, 1.0, 0.0, 0.5);
+
+                point_text_node->addChild(drawTextGeode(pos, name, color));
+            }
+
+            osg::ref_ptr<osg::Switch> line_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, line_text_node_name));
+            for (const auto& line : lines) {
+
+                const auto& backward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.bpid));
+                const auto& forward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.fpid));
+                osg::Vec3d pos1(backward_point.bx, backward_point.ly, backward_point.h);
+                osg::Vec3d pos2(forward_point.bx, forward_point.ly, forward_point.h);
+
+                osg::Vec3d pos = ( pos1 + pos2 ) / 2;
+                std::string name = std::to_string(line.lid);
+                osg::Vec4f color(1.0, 0.0, 0.0, 0.5);
+
+                line_text_node->addChild(drawTextGeode(pos, name, color));
+            }
+        }
+
         //emit
         {
-
-
         }
 
         cleanUp(true);
@@ -333,7 +359,24 @@ void LineEditor::cleanUp(bool all) {
 }
 
 void LineEditor::updateIndex() {
+    //update cur_point_index in case traceEditor add new points!
     cur_point_index = VectorMapSingleton::getInstance()->getMaxPointIndex() + 1;
+}
+
+osg::ref_ptr<osg::Geode> LineEditor::drawTextGeode(const osg::Vec3d& pos,
+        const std::string& content, const osg::Vec4f& color) const {
+    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+    geode->setName(content);
+
+    osg::ref_ptr<osgText::Text> text = new osgText::Text;
+    text->setCharacterSize(0.5);
+    text->setAxisAlignment( osgText::TextBase::XY_PLANE );
+    text->setPosition(pos);
+    text->setText(content);
+    text->setColor(color);
+
+    geode->addDrawable(text);
+    return geode.release();
 }
 
 std::ostream& operator<<(std::ostream& os, const osg::Vec3d& point){

@@ -7,8 +7,11 @@
 #define POINTCLOUDAPPLICATION_LINEEDITOR_H
 
 #include <iostream>
+#include <string>
 
 #include <osg/Vec3d>
+#include <osg/Vec4f>
+#include <osg/Geode>
 #include <osgViewer/View>
 #include <osgGA/GUIEventHandler>
 #include <osgGA/GUIEventAdapter>
@@ -24,13 +27,13 @@ public:
     void pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view);
 
 private:
-    void updateIndex(); //update cur_point_index in case traceEditor add new points!
+    void updateIndex();
     void cleanUp(bool all = true);
+    osg::ref_ptr<osg::Geode> drawTextGeode(const osg::Vec3d& pos,
+            const std::string& content, const osg::Vec4f& color) const;
 
     osg::ref_ptr<osg::Switch> root_node_;
     osg::ref_ptr<osg::Switch> temp_node_;
-    osg::ref_ptr<osg::Switch> line_node_;
-
     osg::ref_ptr<osg::Geode>  temp_line_geode_;
 
     std::vector<std::pair<size_t, osg::Vec3d>> selected_points;
