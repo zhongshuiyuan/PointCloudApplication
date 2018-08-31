@@ -219,7 +219,7 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
                 const Point& backward_point = points[i];
                 const Point& forward_point = points[i + 1];
 
-                //TODO don't judge overlapping
+                //TODO judge overlapping
                 size_t backward_line_id = (i == 0 ? 0 : cur_min_line_index - 1); // start line
                 size_t forward_line_id  = (i == points.size() - 2 ? 0 :cur_min_line_index + 1); // end line
 

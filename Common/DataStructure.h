@@ -11,6 +11,7 @@
 #include <functional>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 constexpr double RADIUS_MAX = 90000000000;
 
@@ -109,7 +110,7 @@ struct Lane {
 
 struct dtLane {
     size_t did;
-    double dist;
+    size_t dist;
     size_t pid;
     double dir;
     double apara;
@@ -118,15 +119,15 @@ struct dtLane {
     double slope, cant, lw, rw;
 
     dtLane() {
-        did = pid = 0;
-        dist = dir = apara = r = 0;
+        did = dist = pid = 0;
+        dir = apara = r = 0;
         slope = cant = lw = rw = 0;
     }
 
-    dtLane(size_t _did, size_t _pid, double _a, double _r) {
-        did = _did; pid = _pid;
+    dtLane(size_t _did, size_t _dist, size_t _pid, double _a, double _r) {
+        did = _did; dist = _dist; pid = _pid;
         apara = _a; r = _r;
-        dist = dir = 0;
+        dir = 0;
         slope = cant = lw = rw = 0;
     }
 };
@@ -141,23 +142,23 @@ public:
     Key() = default;
 
     explicit Key(size_t id)
-            : id_(id)
-    {
+            : id_(id) {
     }
 
-    void setId(size_t id)
-    {
+    void setId(size_t id) {
         id_ = id;
     }
 
-    size_t getId() const
-    {
+    size_t getId() const {
         return id_;
     }
 
-    bool operator<(const Key<T>& right) const
-    {
+    bool operator<(const Key<T>& right) const {
         return id_ < right.getId();
+    }
+
+    bool operator==(const Key<T>& right) const {
+        return id_ == right.getId();
     }
 };
 
@@ -174,7 +175,15 @@ public:
     Handle() = default;
 
     void update(const Key<T>& key, const T& t){
-        map_.insert(std::make_pair(key, t));
+        //map_.insert(std::make_pair(key, t));
+        //std::map::insert() function doesn't change pre-existing key-value
+        //unless you do it in explicit way
+
+        auto it = map_.find(key);
+        if (it == map_.end())
+            map_.insert(std::make_pair(key, t));
+        else
+            map_[key] = t;
     }
 
     T findByKey(const Key<T>& key) const
@@ -210,6 +219,26 @@ public:
         return index;
     }
 
+    void print() const {
+        std::cout << "---------" << std::endl;
+        for (const auto& pair : map_) {
+            const Key<T>& key = std::get<0>(pair);
+            const T& obj = std::get<1>(pair);
+            std::cout << key.getId() << "--"<< obj << std::endl;
+        }
+    }
+
+    void output(const std::string& csv_file, const std::string& header) const {
+        std::ofstream ofs(csv_file);
+        ofs << header << std::endl;
+
+        for (const auto& pair : map_) {
+            const T& obj = std::get<1>(pair);
+            ofs << obj << std::endl;
+        }
+        ofs.close();
+    }
+
     size_t size() const {
         return map_.size();
     }
@@ -233,6 +262,4 @@ std::vector<T> parse(const std::string& csv_file)
 }
 
 } //m_map
-
-
 #endif //POINTCLOUDAPPLICATION_DATASTRUCTURE_H

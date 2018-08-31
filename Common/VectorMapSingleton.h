@@ -80,6 +80,8 @@ public:
     std::vector<Lane>   findByFilter(const Filter<Lane>& filter) const;
     std::vector<dtLane> findByFilter(const Filter<dtLane>& filter) const;
 
+    void saveToDir(const std::string& dir_path) const;
+
 private:
     static VectorMapSingleton* instance;
 

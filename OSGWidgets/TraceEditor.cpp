@@ -246,6 +246,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
         std::vector<dtLane> dtlanes;
         {
             bool is_curve = isCurveLine(selected_points);
+            int dir = 0;
 
             size_t cur_min_lane_index = VectorMapSingleton::getInstance()->getMaxLaneIndex() + 1;
             for (int i = 0; i < nodes.size() - 1; ++i) {
@@ -302,7 +303,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 double r = RADIUS_MAX;
                 if (is_curve)  r = 9.9;
 
-                dtlanes.emplace_back(cur_min_lane_index, backward_node.pid, apara, r);
+                dtlanes.emplace_back(cur_min_lane_index, dir++, backward_node.pid, apara, r);
                 cur_min_lane_index++;
             }
 
@@ -426,7 +427,7 @@ void TraceEditor::cleanUp(bool all) {
 
 void TraceEditor::updateIndex() {
     //update cur_point_index in case lineEditor add new points!
-    cur_point_index = VectorMapSingleton::getInstance()->getMaxPointIndex() + 1;
+    cur_point_index = VectorMapSingleton::getInstance()->getMaxNodeIndex() + 1;
 }
 
 std::vector<osg::Vec3d> TraceEditor::calculateInterpolationPoints(const osg::Vec3d& start_point, const osg::Vec3d& end_point) const {

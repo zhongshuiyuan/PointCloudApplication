@@ -255,3 +255,8 @@ void OSGWidget::activeTraceEditor(bool is_active) {
         main_view_->removeEventHandler(trace_editor_);
     }
 }
+
+
+void OSGWidget::saveVectorMapToDir(const std::string dir_path) const {
+    VectorMapSingleton::getInstance()->saveToDir(dir_path);
+}

@@ -46,6 +46,7 @@ private:
     QAction*  open_file_action;
     QAction*  draw_line_action;
     QAction* draw_trace_action;
+    QAction*  save_file_action;
 
     Q_DISABLE_COPY(MainWindow);
 Q_SIGNALS:
@@ -53,6 +54,7 @@ Q_SIGNALS:
 
 private Q_SLOTS:
     void openFile();
+    void saveFile();
     void drawLine(bool is_active);
     void drawTrace(bool is_active);
 };

@@ -47,6 +47,8 @@ public:
     void activeLineEditor(bool is_active);
     void activeTraceEditor(bool is_active);
 
+    void saveVectorMapToDir(const std::string dir_path) const;
+
 private:
     void paintEvent(QPaintEvent*) final;
 

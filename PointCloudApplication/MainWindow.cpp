@@ -26,7 +26,8 @@ MainWindow::MainWindow(QWidget *parent) :
     label_(nullptr),
     open_file_action(nullptr),
     draw_line_action(nullptr),
-    draw_trace_action(nullptr){
+    draw_trace_action(nullptr),
+    save_file_action(nullptr){
     initUI();
 }
 
@@ -43,27 +44,6 @@ void MainWindow::initUI() {
     createToolBar();
     createStatusBar();
     createDockWidget();
-}
-
-void MainWindow::openFile() {
-//    QMessageBox::information(this, "Open", "Open a file");
-    TRACER;
-    QDir dir("/home/zhihui/.autoware/data/map/pointcloud_map");
-
-    QStringList filters;
-    filters << "*.pcd";
-    dir.setNameFilters(filters);
-
-    QFileInfoList list = dir.entryInfoList();
-    for(const QFileInfo& fileInfo : list){
-        std::cout << qPrintable(QString("%1 %2").arg(fileInfo.size(), 10)
-                                        .arg(fileInfo.fileName()));
-        std::cout << std::endl;
-
-        osgwidget_->readPCDataFromFile(fileInfo);
-    }
-
-    osgwidget_->initTerrainManipulator();
 }
 
 void MainWindow::createConnect() {
@@ -87,6 +67,9 @@ void MainWindow::createMenu() {
     connect(draw_trace_action, SIGNAL(toggled(bool)), this, SLOT(drawTrace(bool)));
 
 
+    save_file_action = new QAction("Save", this);
+    save_file_action->setIcon(QIcon("../../resources/file_save.png"));
+    connect(save_file_action, SIGNAL(triggered()), this, SLOT(saveFile()));
 //    QMenu *menu = menuBar()->addMenu("File");
 //    menu->addAction(open_file_action);
 }
@@ -98,6 +81,9 @@ void MainWindow::createToolBar() {
 
     toolBar->addAction(draw_line_action);
     toolBar->addAction(draw_trace_action);
+    toolBar->addSeparator();
+
+    toolBar->addAction(save_file_action);
 }
 
 void MainWindow::createStatusBar() {
@@ -148,4 +134,32 @@ void MainWindow::drawTrace(bool is_active) {
     }
 
     osgwidget_->activeTraceEditor(is_active);
+}
+
+void MainWindow::openFile() {
+//    QMessageBox::information(this, "Open", "Open a file");
+    TRACER;
+    QDir dir("/home/zhihui/.autoware/data/map/pointcloud_map");
+
+    QStringList filters;
+    filters << "*.pcd";
+    dir.setNameFilters(filters);
+
+    QFileInfoList list = dir.entryInfoList();
+    for(const QFileInfo& fileInfo : list){
+        std::cout << qPrintable(QString("%1 %2").arg(fileInfo.size(), 10)
+                                        .arg(fileInfo.fileName()));
+        std::cout << std::endl;
+
+        osgwidget_->readPCDataFromFile(fileInfo);
+    }
+
+    osgwidget_->initTerrainManipulator();
+}
+
+void MainWindow::saveFile() {
+    TRACER;
+    std::string dir_path = "../../vmap";
+
+    osgwidget_->saveVectorMapToDir(dir_path);
 }

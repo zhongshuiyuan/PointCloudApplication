@@ -3,6 +3,8 @@
 // Contact me:wk707060335@gmail.com
 //
 #include <iostream>
+#include <fstream>
+
 #include "VectorMapSingleton.h"
 
 //static member initialize: <data type> <class name>::<member name>=<value>
@@ -142,6 +144,59 @@ std::vector<Lane> VectorMapSingleton::findByFilter(const Filter<Lane>& filter) c
 std::vector<dtLane> VectorMapSingleton::findByFilter(const Filter<dtLane>& filter) const
 {
     return dtlanes_.findByFilter(filter);
+}
+
+
+void VectorMapSingleton::saveToDir(const std::string& dir_path) const {
+
+    //point
+    {
+        std::string header = "PID,B,L,H,Bx,Ly,ReF,MCODE1,MCODE2,MCODE3";
+        std::string file_path = dir_path + "/point.csv";
+
+        points_.output(file_path, header);
+    }
+
+    //line
+    {
+        std::string header = "LID,BPID,FPID,BLID,FLID";
+        std::string file_path = dir_path + "/line.csv";
+
+        lines_.output(file_path, header);
+    }
+
+    //area
+    {
+        std::string header = "AID,SLID,ELID";
+        std::string file_path = dir_path + "/area.csv";
+
+        areas_.output(file_path, header);
+    }
+
+    //node
+    {
+        std::string header = "NID,PID";
+        std::string file_path = dir_path + "/node.csv";
+
+        nodes_.output(file_path, header);
+    }
+
+    //lane
+    {
+        std::string header = "LnID,DID,BLID,FLID,BNID,FNID,JCT,BLID2,BLID3,BLID4,FLID2,FLID3,FLID4,"
+                             "ClossID,Span,LCnt,Lno,LaneType,LimitVel,RefVel,RoadSecID,LaneChgFG";
+        std::string file_path = dir_path + "/lane.csv";
+
+        lanes_.output(file_path, header);
+    }
+
+    //dtlane
+    {
+        std::string header = "DID,Dist,PID,Dir,Apara,r,slope,cant,LW,RW";
+        std::string file_path = dir_path + "/dtlane.csv";
+
+        dtlanes_.output(file_path, header);
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, const Point& obj)
