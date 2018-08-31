@@ -17,6 +17,8 @@
 
 class TraceEditor : public osgGA::GUIEventHandler
 {
+    typedef std::vector<std::pair<size_t, osg::Vec3d>> point_pair_vec;
+
 public:
     explicit TraceEditor(osg::Switch* root_node);
     ~TraceEditor() final;
@@ -27,6 +29,7 @@ public:
 private:
     void updateIndex(); //update cur_point_index in case lineEditor add new points!
     void cleanUp(bool all = true);
+    bool isCurveLine(const point_pair_vec& points) const;
     std::vector<osg::Vec3d> calculateInterpolationPoints(const osg::Vec3d& start_point, const osg::Vec3d& end_point) const;
 
     osg::ref_ptr<osg::Switch> root_node_;
@@ -35,7 +38,7 @@ private:
 
     osg::ref_ptr<osg::Geode>  temp_line_geode_;
 
-    std::vector<std::pair<size_t, osg::Vec3d>> selected_points;
+    point_pair_vec selected_points;
     size_t cur_point_index;
 
 protected:

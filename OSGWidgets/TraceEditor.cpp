@@ -4,9 +4,10 @@
 //
 
 #include <vector>
-#include <iomanip>
+#include <iomanip>   // for std::flags
 #include <algorithm> // for copy
-#include <iterator> // for ostream_iterator
+#include <iterator>  // for ostream_iterator
+#include <math.h>    // for acos
 
 #include <osg/ValueObject>
 #include <osg/ShapeDrawable>
@@ -18,6 +19,8 @@
 #include "../Common/VectorMapSingleton.h"
 #include "DataStructure.h"
 using m_map::Point;
+
+#define PI 3.14159265
 
 TraceEditor::TraceEditor(osg::Switch* root_node) :
         root_node_(root_node),
@@ -163,6 +166,8 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                     node_geode->addDrawable(node_sphere);
                     temp_node_->addChild(node_geode);
                 }
+
+                std::cout << "local point: " << local_point_index << std::endl;
                 selected_points.emplace_back(std::make_pair(local_point_index, local_point));
             }
         }
@@ -200,14 +205,14 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
     {
         //interpolation
         {
-            std::vector<std::pair<size_t, osg::Vec3d>> tmp_selected_points;
+            point_pair_vec tmp_selected_points;
             for (int i = 0; i < selected_points.size() - 1; ++i) {
                 const osg::Vec3d& start_point = std::get<1>(selected_points[i]);
                 const osg::Vec3d& end_point = std::get<1>(selected_points[i + 1]);
 
                 std::vector<osg::Vec3d> interpolated_points = calculateInterpolationPoints(start_point, end_point);
 
-                std::vector<std::pair<size_t, osg::Vec3d>> dense_selected_points;
+                point_pair_vec dense_selected_points;
                 dense_selected_points.push_back(selected_points[i]);
                 for (auto point: interpolated_points) {
                     dense_selected_points.emplace_back(std::make_pair(cur_point_index++, point));
@@ -219,55 +224,92 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
             tmp_selected_points.swap(selected_points);
         }
 
-        //update point
+        //update point, node
         std::vector<Point> points;
+        std::vector<Node> nodes;
         {
+            size_t cur_min_point_index = VectorMapSingleton::getInstance()->getMaxPointIndex() + 1;
+
             for (const auto& pair : selected_points) {
-                size_t index = std::get<0>(pair);
+                size_t node_id = std::get<0>(pair);
+                size_t point_id = cur_min_point_index++; //TODO don't judge point's exist
                 osg::Vec3d pos = std::get<1>(pair);
 
-                points.emplace_back(index, pos.x(), pos.y(), pos.z());
+                points.emplace_back(point_id, pos.x(), pos.y(), pos.z());
+                nodes.emplace_back(node_id, point_id);
             }
             VectorMapSingleton::getInstance()->update(points);
+            VectorMapSingleton::getInstance()->update(nodes);
         }
 
-        //update line, area
-        //line
-        std::vector<Line> lines;
+        //update lane, dtlane
+        //lane
+        std::vector<Lane> lanes;
+        std::vector<dtLane> dtlanes;
         {
-            size_t cur_min_line_index = VectorMapSingleton::getInstance()->getMaxLineIndex() + 1;
-            for (int i = 0; i < points.size() - 1; ++i) {
-                const Point& backward_point = points[i];
-                const Point& forward_point = points[i + 1];
+            bool is_curve = isCurveLine(selected_points);
 
-                //TODO don't judge overlapping
-                size_t backward_line_id = (i == 0 ? 0 : cur_min_line_index - 1); // start line
-                size_t forward_line_id  = (i == points.size() - 2 ? 0 :cur_min_line_index + 1); // end line
+            size_t cur_min_lane_index = VectorMapSingleton::getInstance()->getMaxLaneIndex() + 1;
+            for (int i = 0; i < nodes.size() - 1; ++i) {
+                const Node& backward_node = nodes[i];
+                const Node& forward_node = nodes[i + 1];
 
-                lines.emplace_back(cur_min_line_index, backward_point.pid, forward_point.pid, backward_line_id, forward_line_id);
+                size_t backward_lane_id = (i == 0 ? 0 : cur_min_lane_index - 1);
+                size_t forward_lane_id  = (i == nodes.size() - 2 ? 0 :cur_min_lane_index + 1);
 
-                cur_min_line_index++;
+                //backward connection
+                if (i == 0) {
+                    //search connected lane
+                    std::vector<Lane> connected_lanes = VectorMapSingleton::getInstance()->findByFilter([&](const Lane& lane) {
+                        if (lane.fnid == backward_node.nid) return true;
+                        else return false;
+                    });
+
+                    //update connected lane
+                    if (!connected_lanes.empty()) {
+                        Lane& connected_lane = connected_lanes.back();
+                        if (connected_lane.flid == 0) { connected_lane.flid = cur_min_lane_index; }
+                        else if (connected_lane.flid2 == 0) { connected_lane.flid2 = cur_min_lane_index; }
+                        else { connected_lane.flid3 = cur_min_lane_index; }
+
+                        backward_lane_id = connected_lane.lnid;
+                        std::cout << "connected lane: " << connected_lane << std::endl;
+                        lanes.push_back(connected_lane);
+                    }
+                }
+
+                //forward connection
+                if (i == nodes.size() - 2) {
+                    std::vector<Lane> connected_lanes = VectorMapSingleton::getInstance()->findByFilter([&](const Lane& lane) {
+                        if (lane.bnid == forward_node.nid) return true;
+                        else return false;
+                    });
+
+                    if (!connected_lanes.empty()) {
+                        Lane& connected_lane = connected_lanes.back();
+                        if (connected_lane.blid == 0) { connected_lane.blid = cur_min_lane_index; }
+                        else if (connected_lane.blid2 == 0) { connected_lane.blid2 = cur_min_lane_index; }
+                        else { connected_lane.blid3 = cur_min_lane_index; }
+
+                        forward_lane_id = connected_lane.lnid;
+                        std::cout << "connected lane: " << connected_lane << std::endl;
+                        lanes.push_back(connected_lane);
+                    }
+                }
+
+                lanes.emplace_back(cur_min_lane_index, cur_min_lane_index, backward_lane_id, forward_lane_id, backward_node.nid, forward_node.nid);
+
+                //TODO update connected dtlanes
+                double apara = 0.0;
+                double r = RADIUS_MAX;
+                if (is_curve)  r = 9.9;
+
+                dtlanes.emplace_back(cur_min_lane_index, backward_node.pid, apara, r);
+                cur_min_lane_index++;
             }
 
-            VectorMapSingleton::getInstance()->update(lines);
-        }
-
-        //area
-        std::vector<Area> areas;
-        {
-            size_t start_point_id = points[0].pid;
-            size_t end_point_id = points.back().pid;
-            if (start_point_id == end_point_id) {
-                size_t cur_min_area_index = VectorMapSingleton::getInstance()->getMaxAreaIndex() + 1;
-
-                size_t start_line_id = lines[0].lid;
-                size_t end_line_id = lines.back().lid;
-
-                Area area(cur_min_area_index, start_line_id, end_line_id);
-                areas.push_back(area);
-
-                VectorMapSingleton::getInstance()->update(areas);
-            }
+            VectorMapSingleton::getInstance()->update(lanes);
+            VectorMapSingleton::getInstance()->update(dtlanes);
         }
 
         //redraw line, point
@@ -300,12 +342,13 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
 
             //point
             {
-                for (const auto& point : points) {
-                    int local_point_index = point.pid;
+                for (int i = 0; i < nodes.size(); ++i) {
+                    int local_point_index = nodes[i].nid;
+                    const Point& point = points[i];
                     osg::Vec3d local_point(point.bx, point.ly, point.h);
 
                     osg::ref_ptr<osg::Geode> point_geode = new osg::Geode;
-                    point_geode->setName("point");
+                    point_geode->setName("node");
                     point_geode->setUserValue("id", local_point_index);
                     point_geode->setUserValue("pos", local_point);
 
@@ -320,13 +363,14 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
         //debug
         if (true) {
             std::cout << "--------result---------" << std::endl;
-            for (auto point : points)
-                std::cout << "point:" << point << std::endl;
-//            std::copy(points.begin(), points.end(), std::ostream_iterator<Point>(std::cout, "\n"));
-            for (auto line : lines)
-                std::cout << "line: " << line << std::endl;
-            for (auto area : areas)
-                std::cout << "area: " << area << std::endl;
+            for (auto node : nodes)
+                std::cout << "node: " << node << std::endl;
+//            for (auto point : points)
+//                std::cout << "point:" << point << std::endl;
+            for (auto lane : lanes)
+                std::cout << "lane: " << lane << std::endl;
+            for (auto dtlane : dtlanes)
+                std::cout << "dtlane: " << dtlane << std::endl;
         }
 
         //emit
@@ -370,4 +414,28 @@ std::vector<osg::Vec3d> TraceEditor::calculateInterpolationPoints(const osg::Vec
     }
 
     return points;
+}
+
+bool TraceEditor::isCurveLine(const point_pair_vec& points) const {
+    if (points.size() < 3) return false;
+
+    osg::Vec3d p1 = std::get<1>(*points.begin());
+    osg::Vec3d p2 = std::get<1>(*(points.begin() + 1));
+    osg::Vec3d dir1 = p2 - p1;
+    dir1.normalize();
+
+    osg::Vec3d p3 = std::get<1>(*(points.end() - 2));
+    osg::Vec3d p4 = std::get<1>(*(points.end() - 1));
+    osg::Vec3d dir2 = p4 - p3;
+    dir2.normalize();
+
+    double alpha = dir1 * dir2;
+    alpha = (alpha > 0.999) ? 0.999 : (alpha < -0.999) ? -0.999 : alpha;
+
+    double angle = std::acos(alpha) * 180 / PI;
+    printf ("The arc cosine of %f is %f degrees.\n", alpha, angle);
+
+    if (angle < 30 and angle > -30) return false;
+
+    return true;
 }

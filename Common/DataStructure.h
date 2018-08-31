@@ -12,6 +12,8 @@
 #include <fstream>
 #include <sstream>
 
+constexpr double RADIUS_MAX = 90000000000;
+
 namespace m_map{
 
 struct Point{
