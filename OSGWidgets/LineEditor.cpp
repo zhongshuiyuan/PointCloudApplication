@@ -124,8 +124,8 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
     if (selected_points.empty()) updateIndex();
 
     if (ea.getButton() == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
-        double w = 3.0f;
-        double h = 3.0f;
+        double w = 1.5f;
+        double h = 1.5f;
 
         osg::ref_ptr<osgUtil::PolytopeIntersector> picker = new osgUtil::PolytopeIntersector(
                 osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);

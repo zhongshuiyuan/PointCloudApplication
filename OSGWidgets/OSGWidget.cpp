@@ -256,7 +256,98 @@ void OSGWidget::activeTraceEditor(bool is_active) {
     }
 }
 
+double distanceBewteen2DLineSegment(const osg::Vec3d& p1, const osg::Vec3d& p2, const osg::Vec3d& q1, const osg::Vec3d& q2) {
+    osg::Vec3d d1 = p2 - p1;
+    osg::Vec3d d2 = q2 - q1;
+
+    double a, b, c ,d, e;
+    a = d1 * d1;
+    b = d1 * d2;
+    c = d2 * d2;
+    d = d1 * (p1 - q1);
+    e = d2 * (p1 - q1);
+
+    double t_num, t_den, s_num, s_den;
+    t_num = t_den = s_num = s_den = 0;
+
+    double delta = a * c - b * b;
+    t_den = s_den = delta;
+
+    //parallel
+    if (delta == 0) {
+        t_num = 0; s_num = -e; s_den = b;
+    } else {
+        s_num = b * e - c * d; t_num = a * e - b * d;
+    }
+
+    if (s_num < 0) {
+        s_num = 0; t_num = d; t_den = b;
+    } else if (s_num > s_den) {
+        s_num = s_den; t_num = a + d; t_den = b;
+    }
+
+    if (t_num < 0) {
+        t_num = 0; s_num = -d; s_den = a;
+        if (s_num < 0) {
+            s_num = 0;
+        } else if (s_num > s_den) {
+            s_num = s_den = 1;
+        }
+    } else if (t_num > t_den) {
+        t_num = t_den; s_num = c - e; s_den = b;
+        if (s_num < 0) {
+            s_num = 0;
+        }
+
+        if (s_num > s_den) {
+            s_num = s_den = 1;
+        }
+    }
+    double t, s;
+    t = s = 0;
+    if (s_den != 0) s = s_num / s_den;
+    if (t_den != 0) t = t_num / t_den;
+
+
+    osg::Vec3d p = p1 + d1 * s;
+    osg::Vec3d q = q1 + d2 * t;
+    osg::Vec3d dis = p - q;
+    double distance = dis.length();
+
+    return distance;
+}
 
 void OSGWidget::saveVectorMapToDir(const std::string dir_path) const {
+
+    //calculate closest lane foreach line
+    std::vector<Line> lines = VectorMapSingleton::getInstance()->findByFilter([](const Line& line) { return true; });
+    std::vector<Lane> lanes = VectorMapSingleton::getInstance()->findByFilter([](const Lane& lane) { return true; });
+
+    for(Line& line : lines) {
+        Point point1 = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.bpid));
+        Point point2 = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.fpid));
+        osg::Vec3d p1(point1.bx, point1.ly, 0);
+        osg::Vec3d p2(point2.bx, point2.ly, 0);
+        double min_distance = INT_MAX;
+        size_t linkId = 0;
+
+        for (const Lane& lane : lanes) {
+            Node node1 = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.bnid));
+            Node node2 = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.fnid));
+            Point _point1 = VectorMapSingleton::getInstance()->findByID(Key<Point>(node1.pid));
+            Point _point2 = VectorMapSingleton::getInstance()->findByID(Key<Point>(node2.pid));
+            osg::Vec3d q1(_point1.bx, _point1.ly, 0);
+            osg::Vec3d q2(_point2.bx, _point2.ly, 0);
+
+            double distance = distanceBewteen2DLineSegment(p1, p2, q1, q2);
+            if (distance < min_distance) {
+                min_distance = distance;
+                linkId = lane.lnid;
+            }
+        }
+
+        std::cout << line.lid << " closest lane id: " << linkId << std::endl;
+    }
+
     VectorMapSingleton::getInstance()->saveToDir(dir_path);
 }
