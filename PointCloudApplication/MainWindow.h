@@ -43,10 +43,12 @@ private:
 
     //items
     QLabel*             label_;
+    QAction*    clicked_action;
     QAction*  open_file_action;
     QAction*  draw_line_action;
     QAction* draw_trace_action;
     QAction*  save_file_action;
+    QAction*select_item_action;
 
     Q_DISABLE_COPY(MainWindow);
 Q_SIGNALS:
@@ -57,6 +59,7 @@ private Q_SLOTS:
     void saveFile();
     void drawLine(bool is_active);
     void drawTrace(bool is_active);
+    void selectItem(bool is_active);
 };
 
 

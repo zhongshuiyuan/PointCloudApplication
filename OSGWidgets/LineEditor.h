@@ -39,7 +39,6 @@ private:
     std::vector<std::pair<size_t, osg::Vec3d>> selected_points;
     size_t cur_point_index;
 
-protected:
     float _mx,_my;
 };
 

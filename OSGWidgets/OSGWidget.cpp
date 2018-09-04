@@ -30,6 +30,7 @@ OSGWidget::OSGWidget(QWidget* parent) :
     root_node_(nullptr),
     line_editor_(nullptr),
     trace_editor_(nullptr),
+    select_editor_(nullptr),
     update_timer_(nullptr) {
 
 }
@@ -56,14 +57,14 @@ void OSGWidget::initSceneGraph() {
     root_node_ = new osg::Switch;
     root_node_->setName(root_node_name);
 
+    osg::ref_ptr<osg::Switch> point_cloud_node = new osg::Switch;
+    point_cloud_node->setName(point_cloud_node_name);
+    root_node_->addChild(point_cloud_node);
+
     osg::ref_ptr<osg::Switch> vmap_node = new osg::Switch;
     vmap_node->setName(vmap_node_name);
     root_node_->addChild(vmap_node);
     {
-        osg::ref_ptr<osg::Switch> point_cloud_node = new osg::Switch;
-        point_cloud_node->setName(point_cloud_node_name);
-        vmap_node->addChild(point_cloud_node);
-
         osg::ref_ptr<osg::Switch> vector_item_node = new osg::Switch;
         vector_item_node->setName(vector_item_node_name);
         vmap_node->addChild(vector_item_node);
@@ -120,7 +121,7 @@ void OSGWidget::initSceneGraph() {
         pcss->setMode(GL_MULTISAMPLE_ARB, osg::StateAttribute::ON);
         pcss->setAttribute(pcps, osg::StateAttribute::ON);
 
-        vmap_node->setStateSet(pcss.get());
+        point_cloud_node->setStateSet(pcss.get());
     }
 }
 
@@ -148,6 +149,14 @@ void OSGWidget::initCamera() {
     camera->setComputeNearFarMode(osg::CullSettings::COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES);
 //    camera->setClearColor(osg::Vec4(0.84313, 0.84313, 0.89804, 1.0));
 
+    //for outline effects
+    {
+        osg::DisplaySettings::instance()->setMinimumNumStencilBits(1);
+        unsigned int clearMask = camera->getClearMask();
+        camera->setClearMask(clearMask | GL_STENCIL_BUFFER_BIT);
+        camera->setClearStencil(0);
+    }
+
     main_view_->addEventHandler(new osgViewer::StatsHandler);
     main_view_->addEventHandler(new osgGA::StateSetManipulator(camera->getStateSet()));
 
@@ -169,6 +178,7 @@ void OSGWidget::initCamera() {
 void OSGWidget::initEditor() {
     line_editor_ = new LineEditor(root_node_);
     trace_editor_ = new TraceEditor(root_node_);
+    select_editor_ = new SelectEditor(root_node_);
 }
 
 void OSGWidget::initTerrainManipulator(){
@@ -209,8 +219,8 @@ void OSGWidget::readPCDataFromFile(const QFileInfo& file_info){
     osg::ref_ptr<osg::Geode> geode = addMapPointCloud(point_cloud, osg::Vec3(0.4, 0.4, 0.4));
     geode->setName(file_info.fileName().toStdString());
 
-    auto vmap_node = dynamic_cast<osg::Switch*>(root_node_->getChild(0));
-    auto point_cloud_node = dynamic_cast<osg::Switch*>(vmap_node->getChild(0));
+    osg::ref_ptr<osg::Switch> point_cloud_node =
+            dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, point_cloud_node_name));
 
     point_cloud_node->addChild(geode.get());
 }
@@ -253,6 +263,14 @@ void OSGWidget::activeTraceEditor(bool is_active) {
         main_view_->addEventHandler(trace_editor_);
     } else {
         main_view_->removeEventHandler(trace_editor_);
+    }
+}
+
+void OSGWidget::activeSelectEditor(bool is_active) {
+    if (is_active) {
+        main_view_->addEventHandler(select_editor_);
+    } else {
+        main_view_->removeEventHandler(select_editor_);
     }
 }
 

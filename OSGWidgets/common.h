@@ -23,4 +23,8 @@ const char node_text_node_name[] = "node_text_node";
 const char lane_text_node_name[] = "lane_text_node";
 const char dtlane_text_node_name[] = "dtlane_text_node";
 
+//used for SelectEditor, do not change them
+const char vector_item_name[] = "item_vector_";
+const char trace_item_name[] = "item_trace_";
+
 #endif //POINTCLOUDAPPLICATION_COMMON_H

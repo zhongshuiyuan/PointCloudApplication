@@ -11,7 +11,7 @@ find_package(Qt5Core CONFIG REQUIRED)
 find_package(Qt5Gui CONFIG REQUIRED)
 find_package(Qt5OpenGL REQUIRED)
 set(OSGWidgets_SRCS
-        OSGWidget.cpp OSGWidget.h NodeTreeInfo.h LineEditor.cpp LineEditor.h common.h NodeTreeSearch.h TraceEditor.cpp TraceEditor.h TextController.h)
+        OSGWidget.cpp OSGWidget.h NodeTreeInfo.h LineEditor.cpp LineEditor.h common.h NodeTreeSearch.h TraceEditor.cpp TraceEditor.h TextController.h SelectEditor.cpp SelectEditor.h)
 add_library(OSGWidgets SHARED ${OSGWidgets_SRCS})
 target_link_libraries(OSGWidgets Qt5::Widgets Qt5::Core)
 
@@ -26,7 +26,7 @@ include_directories(
         ${PCL_INCLUDE_DIRS}
         ${EIGEN3_INCLUDE_DIR}
 )
-find_package(OpenSceneGraph 3.2 REQUIRED COMPONENTS osgGA osgViewer osgDB osgUtil osg osgQt)
+find_package(OpenSceneGraph 3.2 REQUIRED COMPONENTS osgGA osgViewer osgDB osgUtil osg osgQt osgFX)
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 target_link_libraries(OSGWidgets

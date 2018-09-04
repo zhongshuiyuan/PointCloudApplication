@@ -20,6 +20,9 @@
 #include "../Common/VectorMapSingleton.h"
 #include "DataStructure.h"
 using m_map::Point;
+using m_map::Node;
+using m_map::Lane;
+using m_map::dtLane;
 
 #define PI 3.14159265
 
@@ -311,15 +314,20 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
             VectorMapSingleton::getInstance()->update(dtlanes);
         }
 
-        //redraw line, point
+        //redraw lane, point
         {
             osg::ref_ptr<osg::Switch> trace_item_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, trace_item_node_name));
 
-            static int node_index = 0;
-            osg::ref_ptr<osg::Switch> oneDrawNode = new osg::Switch;
-            oneDrawNode->setName("trace" + std::to_string(node_index++));
-            trace_item_node->addChild(oneDrawNode);
-            //line
+            //trace
+            int trace_index = trace_item_node->getNumChildren();
+            int start_lane_id = lanes[0].lnid;
+            int end_lane_id = lanes.back().lnid;
+
+            osg::ref_ptr<osg::Switch> traceNode = new osg::Switch;
+            traceNode->setName(trace_item_name + std::to_string(trace_index++));
+            traceNode->setUserValue("start_lane_id", start_lane_id);
+            traceNode->setUserValue("end_lane_id", end_lane_id);
+            trace_item_node->addChild(traceNode);
             {
                 osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
                 for (const auto& point : points) {
@@ -336,28 +344,28 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_STRIP, 0, vertices->size()));
 
                 osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-                geode->setName("solidLineGeode");
+                geode->setName("LaneGeode");
                 geode->addDrawable(geom);
 
-                oneDrawNode->addChild(geode);
+                traceNode->addChild(geode);
             }
 
-            //point
+            //node
             {
                 for (int i = 0; i < nodes.size(); ++i) {
-                    int local_point_index = nodes[i].nid;
+                    int local_node_index = nodes[i].nid;
                     const Point& point = points[i];
-                    osg::Vec3d local_point(point.bx, point.ly, point.h);
+                    osg::Vec3d local_node(point.bx, point.ly, point.h);
 
-                    osg::ref_ptr<osg::Geode> point_geode = new osg::Geode;
-                    point_geode->setName("node");
-                    point_geode->setUserValue("id", local_point_index);
-                    point_geode->setUserValue("pos", local_point);
+                    osg::ref_ptr<osg::Geode> node_geode = new osg::Geode;
+                    node_geode->setName("node");
+                    node_geode->setUserValue("id", local_node_index);
+                    node_geode->setUserValue("pos", local_node);
 
-                    osg::ref_ptr<osg::ShapeDrawable> point_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.1f));
+                    osg::ref_ptr<osg::ShapeDrawable> point_sphere = new osg::ShapeDrawable(new osg::Sphere(local_node, 0.1f));
                     point_sphere->setColor(osg::Vec4f(1.0, 1.0, 0.0, 1.0));
-                    point_geode->addDrawable(point_sphere);
-                    oneDrawNode->addChild(point_geode);
+                    node_geode->addDrawable(point_sphere);
+                    traceNode->addChild(node_geode);
                 }
             }
         }

@@ -32,6 +32,7 @@
 
 #include "LineEditor.h" //TODO 优化头文件
 #include "TraceEditor.h"
+#include "SelectEditor.h"
 //class LineEditor;
 
 class OSGWidget : public QWidget, public osgViewer::CompositeViewer{
@@ -46,6 +47,7 @@ public:
 
     void activeLineEditor(bool is_active);
     void activeTraceEditor(bool is_active);
+    void activeSelectEditor(bool is_active);
 
     void saveVectorMapToDir(const std::string dir_path) const;
 
@@ -63,8 +65,9 @@ private:
     osg::ref_ptr<osgViewer::View> main_view_;
     osg::ref_ptr<osg::Switch>     root_node_;
 
-    osg::ref_ptr<LineEditor>    line_editor_;
-    osg::ref_ptr<TraceEditor>  trace_editor_;
+    osg::ref_ptr<LineEditor>     line_editor_;
+    osg::ref_ptr<TraceEditor>   trace_editor_;
+    osg::ref_ptr<SelectEditor> select_editor_;
     QTimer* update_timer_;
 
     Q_DISABLE_COPY(OSGWidget);

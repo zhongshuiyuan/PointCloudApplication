@@ -24,10 +24,12 @@ MainWindow::MainWindow(QWidget *parent) :
     dock_widget_(nullptr),
     tree_widget_(nullptr),
     label_(nullptr),
+    clicked_action(nullptr),
     open_file_action(nullptr),
     draw_line_action(nullptr),
     draw_trace_action(nullptr),
-    save_file_action(nullptr){
+    save_file_action(nullptr),
+    select_item_action(nullptr){
     initUI();
 }
 
@@ -66,10 +68,17 @@ void MainWindow::createMenu() {
     draw_trace_action->setCheckable(true);
     connect(draw_trace_action, SIGNAL(toggled(bool)), this, SLOT(drawTrace(bool)));
 
+    select_item_action = new QAction("Select", this);
+    select_item_action->setIcon(QIcon("../../resources/search.png"));
+    select_item_action->setCheckable(true);
+    connect(select_item_action, SIGNAL(toggled(bool)), this, SLOT(selectItem(bool)));
 
     save_file_action = new QAction("Save", this);
     save_file_action->setIcon(QIcon("../../resources/file_save.png"));
     connect(save_file_action, SIGNAL(triggered()), this, SLOT(saveFile()));
+
+
+
 //    QMenu *menu = menuBar()->addMenu("File");
 //    menu->addAction(open_file_action);
 }
@@ -81,6 +90,7 @@ void MainWindow::createToolBar() {
 
     toolBar->addAction(draw_line_action);
     toolBar->addAction(draw_trace_action);
+    toolBar->addAction(select_item_action);
     toolBar->addSeparator();
 
     toolBar->addAction(save_file_action);
@@ -121,8 +131,13 @@ void MainWindow::createDockWidget() {
 }
 
 void MainWindow::drawLine(bool is_active) {
+    //close former clicked action
     if (is_active) {
-        draw_trace_action->setChecked(false);
+        if (clicked_action && clicked_action != draw_line_action)
+        {
+            clicked_action->setChecked(false);
+        }
+        clicked_action = draw_line_action;
     }
 
     osgwidget_->activeLineEditor(is_active);
@@ -130,10 +145,26 @@ void MainWindow::drawLine(bool is_active) {
 
 void MainWindow::drawTrace(bool is_active) {
     if (is_active) {
-        draw_line_action->setChecked(false);
+        if (clicked_action && clicked_action != draw_trace_action)
+        {
+            clicked_action->setChecked(false);
+        }
+        clicked_action = draw_trace_action;
     }
 
     osgwidget_->activeTraceEditor(is_active);
+}
+
+void MainWindow::selectItem(bool is_active){
+    if (is_active) {
+        if (clicked_action && clicked_action != select_item_action)
+        {
+            clicked_action->setChecked(false);
+        }
+        clicked_action = select_item_action;
+    }
+
+    osgwidget_->activeSelectEditor(is_active);
 }
 
 void MainWindow::openFile() {
