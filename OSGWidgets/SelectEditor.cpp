@@ -208,7 +208,7 @@ void SelectEditor::getItemInfo(QStringList itemInfo) {
     std::vector<Lane> lanes = VectorMapSingleton::getInstance()->findByFilter([](const Lane& lane) { return true; });
 
     if (item_type == "StopLine") {
-        size_t index = VectorMapSingleton::getInstance()->getMaxStopLineIndex();
+        size_t index = VectorMapSingleton::getInstance()->getMaxStopLineIndex() + 1;
 
         std::vector<StopLine> stop_lines = generate<StopLine, Lane>(start_id, end_id, index, lanes);
         for(auto& obj : stop_lines) {
@@ -219,7 +219,7 @@ void SelectEditor::getItemInfo(QStringList itemInfo) {
     }
 
     if (item_type == "RoadEdge") {
-        size_t index = VectorMapSingleton::getInstance()->getMaxRoadEdgeIndex();
+        size_t index = VectorMapSingleton::getInstance()->getMaxRoadEdgeIndex() + 1;
 
         std::vector<RoadEdge> road_edges = generate<RoadEdge, Lane>(start_id, end_id, index, lanes);
         VectorMapSingleton::getInstance()->update(road_edges);

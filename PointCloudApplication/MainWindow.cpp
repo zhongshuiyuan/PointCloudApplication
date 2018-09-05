@@ -66,16 +66,19 @@ void MainWindow::createMenu() {
 
     draw_line_action = new QAction("Draw Line", this);
     draw_line_action->setIcon(QIcon("../../resources/line.png"));
+    draw_line_action->setShortcut(QKeySequence("l"));
     draw_line_action->setCheckable(true);
     connect(draw_line_action, SIGNAL(toggled(bool)), this, SLOT(drawLine(bool)));
 
     draw_trace_action = new QAction("Draw trace", this);
     draw_trace_action->setIcon(QIcon("../../resources/curve.png"));
+    draw_trace_action->setShortcut(QKeySequence("t"));
     draw_trace_action->setCheckable(true);
     connect(draw_trace_action, SIGNAL(toggled(bool)), this, SLOT(drawTrace(bool)));
 
     select_item_action = new QAction("Select", this);
     select_item_action->setIcon(QIcon("../../resources/search.png"));
+    select_item_action->setShortcut(QKeySequence("s"));
     select_item_action->setCheckable(true);
     connect(select_item_action, SIGNAL(toggled(bool)), this, SLOT(selectItem(bool)));
 
@@ -202,7 +205,6 @@ void MainWindow::saveFile() {
 
 void MainWindow::receiveItem(QStringList itemInfo) {
     TRACER;
-    qDebug() << "itemInfo:" << itemInfo;
     if (itemInfo.empty()) return;
 
     auto edit_widget = new EditorDialog(itemInfo, this);
