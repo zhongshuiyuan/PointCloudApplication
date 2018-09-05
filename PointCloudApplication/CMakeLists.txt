@@ -17,7 +17,7 @@ find_package(Qt5Core CONFIG REQUIRED)
 # Populate a CMake variable with the sources
 set(PointCloudApplication_SRCS
         main.cpp
-        MainWindow.cpp MainWindow.h)
+        MainWindow.cpp MainWindow.h EditorDialog.cpp EditorDialog.h)
 # Tell CMake to create the helloworld executable
 add_executable(PointCloudApplication ${PointCloudApplication_SRCS})
 # Use the Widgets module from Qt 5

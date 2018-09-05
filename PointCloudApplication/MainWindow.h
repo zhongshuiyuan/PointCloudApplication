@@ -15,6 +15,7 @@
 
 //forward declaration
 class OSGWidget;
+class EditorDialog;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -42,17 +43,17 @@ private:
     QTreeWidget*  tree_widget_;
 
     //items
-    QLabel*             label_;
-    QAction*    clicked_action;
-    QAction*  open_file_action;
-    QAction*  draw_line_action;
-    QAction* draw_trace_action;
-    QAction*  save_file_action;
-    QAction*select_item_action;
+    QLabel*              label_;
+    QAction*     clicked_action;
+    QAction*   open_file_action;
+    QAction*   draw_line_action;
+    QAction*  draw_trace_action;
+    QAction*   save_file_action;
+    QAction* select_item_action;
 
     Q_DISABLE_COPY(MainWindow);
 Q_SIGNALS:
-
+    void setSelectedItem(QStringList itemInfo);
 
 private Q_SLOTS:
     void openFile();
@@ -60,6 +61,8 @@ private Q_SLOTS:
     void drawLine(bool is_active);
     void drawTrace(bool is_active);
     void selectItem(bool is_active);
+
+    void receiveItem(QStringList itemInfo);
 };
 
 

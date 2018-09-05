@@ -13,7 +13,7 @@
 #include <osgGA/GUIActionAdapter>
 #include <osgViewer/View>
 
-#include "common.h"
+#include "NodeNames.h"
 #include "NodeTreeSearch.h"
 #include "../Common/tracer.h"
 

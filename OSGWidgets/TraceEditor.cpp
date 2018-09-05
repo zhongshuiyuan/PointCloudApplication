@@ -14,7 +14,7 @@
 #include <osgText/Text>
 
 #include "TraceEditor.h"
-#include "common.h"
+#include "NodeNames.h"
 #include "NodeTreeSearch.h"
 #include "../Common/tracer.h"
 #include "../Common/VectorMapSingleton.h"
@@ -247,6 +247,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
         //lane
         std::vector<Lane> lanes;
         std::vector<dtLane> dtlanes;
+        std::vector<Lane> update_lanes; //former lanes
         {
             bool is_curve = isCurveLine(selected_points);
             int dir = 0;
@@ -276,7 +277,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
 
                         backward_lane_id = connected_lane.lnid;
                         std::cout << "connected lane: " << connected_lane << std::endl;
-                        lanes.push_back(connected_lane);
+                        update_lanes.push_back(connected_lane);
                     }
                 }
 
@@ -295,7 +296,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
 
                         forward_lane_id = connected_lane.lnid;
                         std::cout << "connected lane: " << connected_lane << std::endl;
-                        lanes.push_back(connected_lane);
+                        update_lanes.push_back(connected_lane);
                     }
                 }
 
@@ -312,21 +313,25 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
 
             VectorMapSingleton::getInstance()->update(lanes);
             VectorMapSingleton::getInstance()->update(dtlanes);
+            VectorMapSingleton::getInstance()->update(update_lanes);
         }
 
         //redraw lane, point
         {
-            osg::ref_ptr<osg::Switch> trace_item_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, trace_item_node_name));
+            osg::ref_ptr<osg::Switch> trace_item_node =
+                    dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, trace_item_node_name));
 
             //trace
             int trace_index = trace_item_node->getNumChildren();
             int start_lane_id = lanes[0].lnid;
             int end_lane_id = lanes.back().lnid;
+            std::string type = "Lane";
 
             osg::ref_ptr<osg::Switch> traceNode = new osg::Switch;
             traceNode->setName(trace_item_name + std::to_string(trace_index++));
-            traceNode->setUserValue("start_lane_id", start_lane_id);
-            traceNode->setUserValue("end_lane_id", end_lane_id);
+            traceNode->setUserValue("start_id", start_lane_id);
+            traceNode->setUserValue("end_id", end_lane_id);
+            traceNode->setUserValue("item_type", type);
             trace_item_node->addChild(traceNode);
             {
                 osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
@@ -344,7 +349,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_STRIP, 0, vertices->size()));
 
                 osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-                geode->setName("LaneGeode");
+                geode->setName("Lane");
                 geode->addDrawable(geom);
 
                 traceNode->addChild(geode);

@@ -13,7 +13,7 @@
 #include <osgText/Text>
 
 #include "LineEditor.h"
-#include "common.h"
+#include "NodeNames.h"
 #include "NodeTreeSearch.h"
 #include "../Common/tracer.h"
 #include "../Common/VectorMapSingleton.h"
@@ -254,19 +254,20 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 
         //redraw line, point
         {
-            osg::ref_ptr<osg::Switch> vector_item_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, vector_item_node_name));
-
+            osg::ref_ptr<osg::Switch> vector_item_node =
+                    dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, vector_item_node_name));
             //vector
-
             int vector_index = vector_item_node->getNumChildren();
             int start_line_id = lines[0].lid;
             int end_line_id = lines.back().lid;
+            std::string type = "Uncertain";
 
-            osg::ref_ptr<osg::Switch> vectorItemNode = new osg::Switch;
-            vectorItemNode->setName(vector_item_name + std::to_string(vector_index++));
-            vectorItemNode->setUserValue("start_line_id", start_line_id);
-            vectorItemNode->setUserValue("end_line_id", end_line_id);
-            vector_item_node->addChild(vectorItemNode);
+            osg::ref_ptr<osg::Switch> vectorNode = new osg::Switch;
+            vectorNode->setName(vector_item_name + std::to_string(vector_index++));
+            vectorNode->setUserValue("start_id", start_line_id);
+            vectorNode->setUserValue("end_id", end_line_id);
+            vectorNode->setUserValue("item_type", type);
+            vector_item_node->addChild(vectorNode);
             //line
             {
                 osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
@@ -287,7 +288,7 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
                 geode->setName("Line");
                 geode->addDrawable(geom);
 
-                vectorItemNode->addChild(geode);
+                vectorNode->addChild(geode);
             }
 
             //point
@@ -303,7 +304,7 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 
                     osg::ref_ptr<osg::ShapeDrawable> point_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.2f));
                     point_geode->addDrawable(point_sphere);
-                    vectorItemNode->addChild(point_geode);
+                    vectorNode->addChild(point_geode);
                 }
             }
         }

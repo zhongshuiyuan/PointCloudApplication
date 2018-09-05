@@ -14,7 +14,6 @@
 #include <iostream>
 
 constexpr double RADIUS_MAX = 90000000000;
-
 namespace m_map{
 
 struct Point{
@@ -88,14 +87,15 @@ struct Lane {
     size_t bnid, fnid;
     size_t jct;
     size_t blid2, flid2, blid3, flid3, blid4, flid4;
-    size_t clossid, span, lcnt, lno, lanetype, limitvel, refvel, roadsecid, lanecfgfg, linkwaid;
+    size_t clossid, span, lcnt, lno, lanetype, limitvel, refvel, roadsecid, lanecfgfg;
 
 
     Lane() {
         lnid = did = blid = flid = bnid = fnid = 0;
         jct = blid2 = flid2 = blid3 = flid3 = blid4 = flid4 = 0;
 
-        clossid = span = lcnt = lno = lanetype = limitvel = refvel = roadsecid = lanecfgfg = linkwaid = 0;
+        clossid = span = lcnt = lno = lanetype = roadsecid = lanecfgfg = 0;
+        limitvel = refvel = 60;
     }
 
     Lane(size_t _lnid, size_t _did, size_t _blid, size_t _flid, size_t _bnid, size_t _fnid) {
@@ -104,7 +104,8 @@ struct Lane {
         bnid = _bnid; fnid = _fnid;
         jct = blid2 = flid2 = blid3 = flid3 = blid4 = flid4 = 0;
 
-        clossid = span = lcnt = lno = lanetype = limitvel = refvel = roadsecid = lanecfgfg = linkwaid = 0;
+        clossid = span = lcnt = lno = lanetype = roadsecid = lanecfgfg = 0;
+        limitvel = refvel = 60;
     }
 };
 
@@ -129,6 +130,54 @@ struct dtLane {
         apara = _a; r = _r;
         dir = 0;
         slope = cant = lw = rw = 0;
+    }
+};
+
+struct RoadEdge {
+    size_t id;
+    size_t lid, linkid;
+
+    RoadEdge() {
+        id = lid = linkid = 0;
+    }
+
+    RoadEdge(size_t _id, size_t _lid) {
+        id = _id;
+        lid = _lid;
+        linkid = 0;
+    }
+};
+
+struct CrossWalk {
+    size_t id, aid;
+    size_t type, bdid;
+    size_t linkid;
+
+    CrossWalk() {
+        id = aid = type = bdid = linkid = 0;
+    }
+
+    CrossWalk(size_t _id, size_t _aid, size_t _type) {
+        id = _id;
+        aid = _aid;
+        type = _type;
+        linkid = bdid = 0;
+    }
+};
+
+struct StopLine {
+    size_t id;
+    size_t lid, tlid;
+    size_t signid, linkid;
+
+    StopLine() {
+        id = lid = tlid = signid = linkid = 0;
+    }
+
+    StopLine(size_t _id, size_t _lid) {
+        id = _id;
+        lid = _lid;
+        linkid = tlid = signid = 0;
     }
 };
 

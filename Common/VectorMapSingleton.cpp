@@ -38,6 +38,18 @@ size_t VectorMapSingleton::getMaxDtLaneIndex() const {
     return dtlanes_.findMaxIndex();
 }
 
+size_t VectorMapSingleton::getMaxRoadEdgeIndex() const {
+    return roadedges_.findMaxIndex();
+}
+
+size_t VectorMapSingleton::getMaxCrossWalkIndex() const {
+    return crosswalks_.findMaxIndex();
+}
+
+size_t VectorMapSingleton::getMaxStopLineIndex() const {
+    return stoplines_.findMaxIndex();
+}
+
 void VectorMapSingleton::update(const std::vector<Point> &points) {
     for (const auto& point : points)
     {
@@ -92,6 +104,31 @@ void VectorMapSingleton::update(const std::vector<dtLane> &dtlanes) {
     }
 }
 
+void VectorMapSingleton::update(const std::vector<RoadEdge> &roadedges) {
+    for (const auto& roadedge : roadedges)
+    {
+        if (roadedge.id == 0)
+            continue;
+        roadedges_.update(Key<RoadEdge>(roadedge.id), roadedge);
+    }
+}
+void VectorMapSingleton::update(const std::vector<CrossWalk> &crosswalks) {
+    for (const auto& crosswalk : crosswalks)
+    {
+        if (crosswalk.id == 0)
+            continue;
+        crosswalks_.update(Key<CrossWalk>(crosswalk.id), crosswalk);
+    }
+}
+void VectorMapSingleton::update(const std::vector<StopLine> &stoplines) {
+    for (const auto& stopline : stoplines)
+    {
+        if (stopline.id == 0)
+            continue;
+        stoplines_.update(Key<StopLine>(stopline.id), stopline);
+    }
+}
+
 Point VectorMapSingleton::findByID(const Key<Point> &key) const {
     return points_.findByKey(key);
 }
@@ -114,6 +151,18 @@ Lane VectorMapSingleton::findByID(const Key<Lane> &key) const {
 
 dtLane VectorMapSingleton::findByID(const Key<dtLane> &key) const {
     return dtlanes_.findByKey(key);
+}
+
+RoadEdge VectorMapSingleton::findByID(const Key<RoadEdge> &key) const {
+    return roadedges_.findByKey(key);
+}
+
+CrossWalk VectorMapSingleton::findByID(const Key<CrossWalk> &key) const {
+    return crosswalks_.findByKey(key);
+}
+
+StopLine VectorMapSingleton::findByID(const Key<StopLine> &key) const {
+    return stoplines_.findByKey(key);
 }
 
 std::vector<Point> VectorMapSingleton::findByFilter(const Filter<Point>& filter) const
@@ -146,6 +195,20 @@ std::vector<dtLane> VectorMapSingleton::findByFilter(const Filter<dtLane>& filte
     return dtlanes_.findByFilter(filter);
 }
 
+std::vector<RoadEdge> VectorMapSingleton::findByFilter(const Filter<RoadEdge>& filter) const
+{
+    return roadedges_.findByFilter(filter);
+}
+
+std::vector<CrossWalk> VectorMapSingleton::findByFilter(const Filter<CrossWalk>& filter) const
+{
+    return crosswalks_.findByFilter(filter);
+}
+
+std::vector<StopLine> VectorMapSingleton::findByFilter(const Filter<StopLine>& filter) const
+{
+    return stoplines_.findByFilter(filter);
+}
 
 void VectorMapSingleton::saveToDir(const std::string& dir_path) const {
 
@@ -196,6 +259,30 @@ void VectorMapSingleton::saveToDir(const std::string& dir_path) const {
         std::string file_path = dir_path + "/dtlane.csv";
 
         dtlanes_.output(file_path, header);
+    }
+
+    //roadedge
+    {
+        std::string header = "ID,LID,LinkID";
+        std::string file_path = dir_path + "/roadedge.csv";
+
+        roadedges_.output(file_path, header);
+    }
+
+    //crosswalk
+    {
+        std::string header = "ID,AID,Type,BdID,LinkID";
+        std::string file_path = dir_path + "/crosswalk.csv";
+
+        crosswalks_.output(file_path, header);
+    }
+
+    //stopline
+    {
+        std::string header = "ID,LID,TLID,SignID,LinkID";
+        std::string file_path = dir_path + "/stopline.csv";
+
+        stoplines_.output(file_path, header);
     }
 }
 
@@ -262,8 +349,7 @@ std::ostream& operator<<(std::ostream& os, const Lane& obj)
        << obj.limitvel << ","
        << obj.refvel << ","
        << obj.roadsecid << ","
-       << obj.lanecfgfg << ","
-       << obj.linkwaid;
+       << obj.lanecfgfg << ",";
     return os;
 }
 
@@ -279,6 +365,34 @@ std::ostream& operator<<(std::ostream& os, const dtLane& obj)
        << obj.cant << ","
        << obj.lw << ","
        << obj.rw;
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const RoadEdge& obj)
+{
+    os << obj.id << ","
+       << obj.lid << ","
+       << obj.linkid;
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const StopLine& obj)
+{
+    os << obj.id << ","
+       << obj.lid << ","
+       << obj.tlid << ","
+       << obj.signid << ","
+       << obj.linkid;
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const CrossWalk& obj)
+{
+    os << obj.id << ","
+       << obj.aid << ","
+       << obj.type << ","
+       << obj.bdid << ","
+       << obj.linkid;
     return os;
 }
 
@@ -380,7 +494,6 @@ std::istream& operator>>(std::istream& is, Lane& obj)
         obj.refvel = 0;
         obj.roadsecid = 0;
         obj.lanecfgfg = 0;
-        obj.linkwaid = 0;
         return is;
     }
     obj.lanetype = std::stoi(columns[17]);
@@ -388,12 +501,6 @@ std::istream& operator>>(std::istream& is, Lane& obj)
     obj.refvel = std::stoi(columns[19]);
     obj.roadsecid = std::stoi(columns[20]);
     obj.lanecfgfg = std::stoi(columns[21]);
-    if (n == 22)
-    {
-        obj.linkwaid = 0;
-        return is;
-    }
-    obj.linkwaid = std::stoi(columns[22]);
     return is;
 }
 
@@ -415,5 +522,51 @@ std::istream& operator>>(std::istream& is, dtLane& obj)
     obj.cant = std::stod(columns[7]);
     obj.lw = std::stod(columns[8]);
     obj.rw = std::stod(columns[9]);
+    return is;
+}
+
+std::istream& operator>>(std::istream& is, RoadEdge& obj)
+{
+    std::vector<std::string> columns;
+    std::string column;
+    while (std::getline(is, column, ','))
+    {
+        columns.push_back(column);
+    }
+    obj.id = std::stoi(columns[0]);
+    obj.lid = std::stoi(columns[1]);
+    obj.linkid = std::stoi(columns[2]);
+    return is;
+}
+
+std::istream& operator>>(std::istream& is, StopLine& obj)
+{
+    std::vector<std::string> columns;
+    std::string column;
+    while (std::getline(is, column, ','))
+    {
+        columns.push_back(column);
+    }
+    obj.id = std::stoi(columns[0]);
+    obj.lid = std::stoi(columns[1]);
+    obj.tlid = std::stoi(columns[2]);
+    obj.signid = std::stoi(columns[3]);
+    obj.linkid = std::stoi(columns[4]);
+    return is;
+}
+
+std::istream& operator>>(std::istream& is, CrossWalk& obj)
+{
+    std::vector<std::string> columns;
+    std::string column;
+    while (std::getline(is, column, ','))
+    {
+        columns.push_back(column);
+    }
+    obj.id = std::stoi(columns[0]);
+    obj.aid = std::stoi(columns[1]);
+    obj.type = std::stoi(columns[2]);
+    obj.bdid = std::stoi(columns[3]);
+    obj.linkid = std::stoi(columns[4]);
     return is;
 }

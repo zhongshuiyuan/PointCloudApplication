@@ -7,16 +7,20 @@
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QDesktopWidget>
+#include <QtWidgets/QInputDialog>
 #include <QtWidgets/QStatusBar>
 #include <QtGui/QIcon>
+#include <QtCore/QDir>
 #include <QtCore/QDebug>
 #include <QtCore/QString>
-#include <QtCore/QDir>
+#include <QtCore/QStringList>
 #include <QtCore/QFileInfoList>
 
 #include "MainWindow.h"
+#include "EditorDialog.h"
 #include "../OSGWidgets/OSGWidget.h"
 #include "../Common/tracer.h"
+#include "../Common/VectorMapSingleton.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -37,19 +41,21 @@ void MainWindow::initUI() {
 
     this->setWindowTitle("PointCloudApplication");
 
-    osgwidget_ = new OSGWidget(this);
-    this->setCentralWidget(osgwidget_);
-    osgwidget_->init();
-    createConnect();
-
     createMenu();
     createToolBar();
     createStatusBar();
     createDockWidget();
+
+    osgwidget_ = new OSGWidget(this);
+    this->setCentralWidget(osgwidget_);
+    osgwidget_->init();
+    createConnect();
 }
 
 void MainWindow::createConnect() {
     TRACER;
+
+    connect(osgwidget_->select_editor_, SIGNAL(selectItem(QStringList)), this, SLOT(receiveItem(QStringList)));
 }
 
 void MainWindow::createMenu() {
@@ -76,8 +82,6 @@ void MainWindow::createMenu() {
     save_file_action = new QAction("Save", this);
     save_file_action->setIcon(QIcon("../../resources/file_save.png"));
     connect(save_file_action, SIGNAL(triggered()), this, SLOT(saveFile()));
-
-
 
 //    QMenu *menu = menuBar()->addMenu("File");
 //    menu->addAction(open_file_action);
@@ -108,7 +112,7 @@ void MainWindow::createDockWidget() {
     tree_widget_ = new QTreeWidget(this);
     tree_widget_->setColumnCount(1);
     tree_widget_->setHeaderHidden(true);
-    //m_pTreeWidget->setColumnWidth(0, 100);
+    //tree_widget_->setColumnWidth(0, 100);
     //tree_widget_->setStyleSheet("QTreeWidget::item {height:25px;");
 
     QTreeWidgetItem *multiDataItem = new QTreeWidgetItem(tree_widget_, QStringList(QStringLiteral("数据列表")));
@@ -119,15 +123,16 @@ void MainWindow::createDockWidget() {
     }
 
     dock_widget_ = new QDockWidget(QStringLiteral("场景数据"), this);
+    dock_widget_->setFixedWidth(200);
     dock_widget_->setFeatures(QDockWidget::AllDockWidgetFeatures);
     dock_widget_->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     dock_widget_->setWidget(tree_widget_);
     this->addDockWidget(Qt::LeftDockWidgetArea, dock_widget_);
 
     //QTreeWidget connect
-    //connect(tree_widget_, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(TreeWidgetClicked(QTreeWidgetItem *, int)));
-    //connect(tree_widget_, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(TreeWidgetDoubleClicked(QTreeWidgetItem *, int)));
-    //connect(tree_widget_, SIGNAL(itemPressed(QTreeWidgetItem *, int)), this, SLOT(TreeWidgetRightedClicked(QTreeWidgetItem *, int)));
+    //connect(edit_widget_, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(TreeWidgetClicked(QTreeWidgetItem *, int)));
+    //connect(edit_widget_, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this, SLOT(TreeWidgetDoubleClicked(QTreeWidgetItem *, int)));
+    //connect(edit_widget_, SIGNAL(itemPressed(QTreeWidgetItem *, int)), this, SLOT(TreeWidgetRightedClicked(QTreeWidgetItem *, int)));
 }
 
 void MainWindow::drawLine(bool is_active) {
@@ -193,4 +198,14 @@ void MainWindow::saveFile() {
     std::string dir_path = "../../vmap";
 
     osgwidget_->saveVectorMapToDir(dir_path);
+}
+
+void MainWindow::receiveItem(QStringList itemInfo) {
+    TRACER;
+    qDebug() << "itemInfo:" << itemInfo;
+    if (itemInfo.empty()) return;
+
+    auto edit_widget = new EditorDialog(itemInfo, this);
+    connect(edit_widget, SIGNAL(postItemInfo(QStringList)), osgwidget_->select_editor_, SLOT(getItemInfo(QStringList)));
+    edit_widget->exec();
 }

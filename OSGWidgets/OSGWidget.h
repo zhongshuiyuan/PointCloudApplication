@@ -49,7 +49,8 @@ public:
     void activeTraceEditor(bool is_active);
     void activeSelectEditor(bool is_active);
 
-    void saveVectorMapToDir(const std::string dir_path) const;
+    void saveVectorMapToDir(const std::string& dir_path) const;
+    osg::ref_ptr<SelectEditor> select_editor_;
 
 private:
     void paintEvent(QPaintEvent*) final;
@@ -67,7 +68,6 @@ private:
 
     osg::ref_ptr<LineEditor>     line_editor_;
     osg::ref_ptr<TraceEditor>   trace_editor_;
-    osg::ref_ptr<SelectEditor> select_editor_;
     QTimer* update_timer_;
 
     Q_DISABLE_COPY(OSGWidget);
