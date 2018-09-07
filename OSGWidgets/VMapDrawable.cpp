@@ -2,6 +2,7 @@
 // Created by WuKun on 9/6/18.
 // Contact me:wk707060335@gmail.com
 //
+#include <osg/ValueObject>
 #include <osgText/Text>
 
 #include "VMapDrawable.h"

@@ -3,8 +3,9 @@
 // Contact me:wk707060335@gmail.com
 //
 
-#include <iostream>
 #include <string>
+#include <vector>
+#include <iostream>
 #include <algorithm>
 
 #include <QtWidgets/QButtonGroup>
@@ -19,7 +20,16 @@
 #include <QtCore/QDebug>
 
 #include "EditorDialog.h"
-#include "../Common/common.h"
+
+const QStringList type_name_list = { "Uncertain", "RoadEdge", "CrossWalk", "StopLine", "Lane" };
+
+const QStringList Uncertain_fields = { "", "", "" };
+const QStringList RoadEdge_fields = { "", "", "" };
+const QStringList CrossWalk_fields = { "Type", "BdID", "" };
+const QStringList StopLine_fields = { "TLID", "SignID", "" };
+const QStringList Lane_fields = { "LCnt", "Lno", "" };
+
+const QVector<QStringList> fields_vec = { Uncertain_fields, RoadEdge_fields, CrossWalk_fields, StopLine_fields, Lane_fields };
 
 EditorDialog::EditorDialog(QStringList& itemInfo, QWidget *parent) :
     QDialog(parent),
@@ -34,11 +44,11 @@ EditorDialog::~EditorDialog() {
 
 void EditorDialog::initUI() {
     this->setWindowTitle("ItemEditDialog");
-    this->setMinimumSize(210, 300);
+    this->setMaximumSize(210, 300);
     this->setAttribute(Qt::WA_DeleteOnClose);
 
-    std::string item_type = itemInfo_[0].toStdString();
-    auto index = distance(type_name_list.begin(), std::find(type_name_list.begin(), type_name_list.end(), item_type));
+    QString item_type = itemInfo_[0];
+    auto index = type_name_list.indexOf(item_type);
     if (index >= type_name_list.size()) return;
     type_ = index;
 
@@ -50,9 +60,10 @@ void EditorDialog::initUI() {
     auto type_label = new QLabel("Type:", this);
     layout->addWidget(type_label, 0, 0, 1, 1);
     for (int i = 0; i < type_name_list.size(); ++i) {
-        QString button_name = QString::fromStdString(type_name_list[i]);
+        QString button_name = type_name_list[i];
         auto button = new QRadioButton(button_name, this);
         button->setIcon(QIcon("../../resources/" + button_name.toLower() + ".png"));
+        button->setVisible(item_type == "Lane" ? i == index : i != type_name_list.indexOf("Lane"));
 
         button_group->addButton(button);
         button_group->setId(button, i);
@@ -65,7 +76,7 @@ void EditorDialog::initUI() {
     //fields region
     const auto& fields_name = fields_vec[index];
     for (int j = 0; j < fields_name.size(); ++j) {
-        QString field_name = QString::fromStdString(fields_name[j]);
+        QString field_name = fields_name[j];
         QString label_object_name = "label" + QString::number(j);
         QString text_object_name = "text" + QString::number(j);
 
@@ -97,9 +108,14 @@ void EditorDialog::initUI() {
 }
 
 void EditorDialog::save() {
+    if (type_ > fields_vec.size() || fields_vec[type_].size() < 3) {
+        std::cout << "plz make sure fields is not less than 3;" << std::endl;
+        return;
+    }
 
     QStringList textInfo;
-    textInfo.append(QString::fromStdString(type_name_list[type_]));
+    textInfo.append(type_name_list[type_]);
+
     for (int i = 0; i < fields_vec[type_].size(); ++i) {
         QString objectName = "text" + QString::number(i);
         auto text = this->findChild<QLineEdit*>(objectName);
@@ -115,7 +131,7 @@ void EditorDialog::buttonsToggled(int index, bool checked) {
     if (checked) {
         const auto& fields_name = fields_vec[index];
         for (int j = 0; j < fields_name.size(); ++j) {
-            QString field_name = QString::fromStdString(fields_name[j]);
+            QString field_name = fields_name[j];
             QString label_object_name = "label" + QString::number(j);
             auto label = this->findChild<QLabel*>(label_object_name);
             label->setText(field_name);

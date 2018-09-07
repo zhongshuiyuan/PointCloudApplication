@@ -16,7 +16,6 @@
 #include "NodeNames.h"
 #include "NodeTreeSearch.h"
 #include "VMapDrawable.h"
-#include "../Common/common.h"
 #include "../Common/tracer.h"
 #include "../Common/DataStructure.h"
 #include "../Common/VectorMapSingleton.h"
@@ -199,7 +198,6 @@ void SelectEditor::receiveItemInfo(QStringList itemInfo) {
         VectorMapSingleton::getInstance()->update(road_edges);
     }
 }
-
 
 template <class T, class U>
 std::vector<T> SelectEditor::generate(size_t start_id, size_t end_id, size_t index, const std::vector<U>& lanes) const {

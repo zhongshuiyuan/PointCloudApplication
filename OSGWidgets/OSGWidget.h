@@ -33,12 +33,7 @@
 #include "LineEditor.h" //TODO 优化头文件
 #include "TraceEditor.h"
 #include "SelectEditor.h"
-namespace m_map {
-    class CrossWalk;
-    class StopLine;
-    class RoadEdge;
-    class Lane;
-}
+
 
 class OSGWidget : public QWidget, public osgViewer::CompositeViewer{
     Q_OBJECT

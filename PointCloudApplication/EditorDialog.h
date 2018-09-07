@@ -11,7 +11,6 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QRadioButton>
-#include <QtCore/QVector>
 #include <QtCore/QStringList>
 
 class EditorDialog : public QDialog {
