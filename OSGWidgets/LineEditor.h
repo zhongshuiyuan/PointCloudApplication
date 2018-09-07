@@ -29,8 +29,6 @@ public:
 private:
     void updateIndex();
     void cleanUp(bool all = true);
-    osg::ref_ptr<osg::Geode> drawTextGeode(const osg::Vec3d& pos,
-            const std::string& content, const osg::Vec4f& color) const;
 
     osg::ref_ptr<osg::Switch> root_node_;
     osg::ref_ptr<osg::Switch> temp_node_;

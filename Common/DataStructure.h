@@ -88,7 +88,7 @@ struct Lane {
     size_t jct;
     size_t blid2, flid2, blid3, flid3, blid4, flid4;
     size_t clossid, span, lcnt, lno, lanetype, limitvel, refvel, roadsecid, lanecfgfg;
-
+    size_t start_end_tag;
 
     Lane() {
         lnid = did = blid = flid = bnid = fnid = 0;
@@ -96,6 +96,7 @@ struct Lane {
 
         clossid = span = lcnt = lno = lanetype = roadsecid = lanecfgfg = 0;
         limitvel = refvel = 60;
+        start_end_tag = 0;
     }
 
     Lane(size_t _lnid, size_t _did, size_t _blid, size_t _flid, size_t _bnid, size_t _fnid) {
@@ -106,6 +107,7 @@ struct Lane {
 
         clossid = span = lcnt = lno = lanetype = roadsecid = lanecfgfg = 0;
         limitvel = refvel = 60;
+        start_end_tag = 0;
     }
 };
 
@@ -157,10 +159,10 @@ struct CrossWalk {
         id = aid = type = bdid = linkid = 0;
     }
 
-    CrossWalk(size_t _id, size_t _aid, size_t _type) {
+    CrossWalk(size_t _id, size_t _aid) {
         id = _id;
         aid = _aid;
-        type = _type;
+        type = 0;
         linkid = bdid = 0;
     }
 };
@@ -233,6 +235,9 @@ public:
             map_.insert(std::make_pair(key, t));
         else
             map_[key] = t;
+
+        //C++17
+        //auto [it, inserted] = map_.insert_or_assign(key, t);
     }
 
     T findByKey(const Key<T>& key) const
@@ -275,6 +280,11 @@ public:
             const T& obj = std::get<1>(pair);
             std::cout << key.getId() << "--"<< obj << std::endl;
         }
+
+        //C++17
+        //for (const auto&& [key, value] : map_) {
+        //   std::cout << key.getId() << "--"<< value << std::endl;
+        //}
     }
 
     void output(const std::string& csv_file, const std::string& header) const {

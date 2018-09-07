@@ -33,7 +33,12 @@
 #include "LineEditor.h" //TODO 优化头文件
 #include "TraceEditor.h"
 #include "SelectEditor.h"
-//class LineEditor;
+namespace m_map {
+    class CrossWalk;
+    class StopLine;
+    class RoadEdge;
+    class Lane;
+}
 
 class OSGWidget : public QWidget, public osgViewer::CompositeViewer{
     Q_OBJECT
@@ -42,6 +47,7 @@ public:
     ~OSGWidget() final = default;
 
     void init();
+    void loadVectorMap();
     void initTerrainManipulator();
     void readPCDataFromFile(const QFileInfo& file_info);
 
@@ -59,12 +65,19 @@ private:
     void initCamera();
     void initEditor();
     void initManipulator();
+    void initVectorMap();
 
     osgQt::GraphicsWindowQt* createGraphicsWindow(int x, int y, int w, int h, const std::string& name = "", bool windowDecoration = false);
     osg::Geode* addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& mapPointCloud, osg::Vec3 color = osg::Vec3(1.0, 1.0, 1.0));
 
-    osg::ref_ptr<osgViewer::View> main_view_;
-    osg::ref_ptr<osg::Switch>     root_node_;
+    void drawAllLines(); //test function
+    template <class T>
+    void drawTraceItems(const std::vector<T>& objects);
+    template <class T>
+    void drawVectorItems(const std::vector<T>& objects);
+
+    osg::ref_ptr<osgViewer::View>  main_view_;
+    osg::ref_ptr<osg::Switch>      root_node_;
 
     osg::ref_ptr<LineEditor>     line_editor_;
     osg::ref_ptr<TraceEditor>   trace_editor_;

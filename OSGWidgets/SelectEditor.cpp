@@ -15,6 +15,7 @@
 #include "SelectEditor.h"
 #include "NodeNames.h"
 #include "NodeTreeSearch.h"
+#include "VMapDrawable.h"
 #include "../Common/common.h"
 #include "../Common/tracer.h"
 #include "../Common/DataStructure.h"
@@ -33,11 +34,6 @@ SelectEditor::SelectEditor(osg::Switch *root) :
     vmap_node_ = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, vmap_node_name));
     temp_node_ = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, temp_node_name));
 }
-
-SelectEditor::~SelectEditor() {
-
-}
-
 
 bool SelectEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa){
     auto view = dynamic_cast<osgViewer::View*>(&aa);
@@ -64,8 +60,6 @@ bool SelectEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdap
             return false;
     }
 }
-
-
 
 void SelectEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 
@@ -107,38 +101,7 @@ void SelectEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view)
                     }
 
                     //fields
-                    std::string item_type = "Uncertain";
-                    node->getUserValue("item_type", item_type);
-
-                    QStringList itemInfo;
-                    itemInfo.append(QString::fromStdString(item_type));
-
-                    if (item_type == "CrossWalk") {
-                        int type = 0;
-                        node->getUserValue("type", type);
-                        itemInfo.append(QString::number(type));
-
-                        int bdid = 0;
-                        node->getUserValue("bdid", bdid);
-                        itemInfo.append(QString::number(bdid));
-                    } else if (item_type == "StopLine") {
-                        int tlid = 0;
-                        node->getUserValue("tlid", tlid);
-                        itemInfo.append(QString::number(tlid));
-
-                        int signid = 0;
-                        node->getUserValue("signid", signid);
-                        itemInfo.append(QString::number(signid));
-                    } else if (item_type == "Lane") {
-                        int lcnt = 0;
-                        node->getUserValue("lcnt", lcnt);
-                        itemInfo.append(QString::number(lcnt));
-
-                        int lno = 0;
-                        node->getUserValue("lno", lno);
-                        itemInfo.append(QString::number(lno));
-                    }
-
+                    QStringList itemInfo = VMapDrawable::getNodeValue(node);
                     emit selectItem(itemInfo);
                     has_intersected = true;
                 }
@@ -156,7 +119,8 @@ void SelectEditor::cleanUp() {
     selected_node_ = nullptr;
 }
 
-void SelectEditor::getItemInfo(QStringList itemInfo) {
+void SelectEditor::receiveItemInfo(QStringList itemInfo) {
+    if (itemInfo.empty() || itemInfo.size() < 4) return;
     //set value
     std::string item_type = itemInfo[0].toStdString();
     int field1 = itemInfo[1].toInt();
@@ -165,27 +129,30 @@ void SelectEditor::getItemInfo(QStringList itemInfo) {
 
     std::cout << "getItemInfo: " << item_type << " " << field1 << " " << field2 << " " << field3 << std::endl;
 
+    //set Node Value
+    VMapDrawable vMapDrawable(root_node_);
     if (item_type == "CrossWalk") {
-        selected_node_->setUserValue("item_type", item_type);
-        selected_node_->setUserValue("type", field1);
-        selected_node_->setUserValue("bdid", field2);
+        CrossWalk false_item;
+        false_item.type = field1;
+        false_item.bdid = field2;
+        vMapDrawable.setNodeValue(false_item, selected_node_.get());
     } else if (item_type == "StopLine") {
-        selected_node_->setUserValue("item_type", item_type);
-        selected_node_->setUserValue("tlid", field1);
-        selected_node_->setUserValue("signid", field2);
+        StopLine false_item;
+        false_item.tlid = field1;
+        false_item.signid = field2;
+        vMapDrawable.setNodeValue(false_item, selected_node_.get());
     } else if (item_type == "Lane") {
-        selected_node_->setUserValue("item_type", item_type);
-        selected_node_->setUserValue("lcnt", field1);
-        selected_node_->setUserValue("lno", field2);
-    }
+        Lane false_item;
+        false_item.lcnt = field1;
+        false_item.lno = field2;
+        vMapDrawable.setNodeValue(false_item, selected_node_.get());
+    } else return; //Uncertain
 
-    //update
+    //update vmap
     int start_id, end_id;
     start_id = end_id = 0;
     selected_node_->getUserValue("start_id", start_id);
     selected_node_->getUserValue("end_id", end_id);
-    if (item_type == "Uncertain") return;
-
     std::cout << "start id: " << start_id << " end id: " << end_id << std::endl;
 
     if (item_type == "Lane") {
@@ -204,7 +171,7 @@ void SelectEditor::getItemInfo(QStringList itemInfo) {
         return;
     }
 
-    //calculate linkid for vector items
+    //create object and calculate linkid for them
     std::vector<Lane> lanes = VectorMapSingleton::getInstance()->findByFilter([](const Lane& lane) { return true; });
 
     if (item_type == "StopLine") {
@@ -216,9 +183,16 @@ void SelectEditor::getItemInfo(QStringList itemInfo) {
             obj.signid = field2;
         }
         VectorMapSingleton::getInstance()->update(stop_lines);
-    }
+    } else if (item_type == "Crosswalk") {
+        size_t index = VectorMapSingleton::getInstance()->getMaxCrossWalkIndex() + 1;
 
-    if (item_type == "RoadEdge") {
+        std::vector<CrossWalk> cross_walks = generate<CrossWalk, Lane>(start_id, end_id, index, lanes);
+        for(auto& obj : cross_walks) {
+            obj.type = field1;
+            obj.bdid = field2;
+        }
+        VectorMapSingleton::getInstance()->update(cross_walks);
+    } else if (item_type == "RoadEdge") {
         size_t index = VectorMapSingleton::getInstance()->getMaxRoadEdgeIndex() + 1;
 
         std::vector<RoadEdge> road_edges = generate<RoadEdge, Lane>(start_id, end_id, index, lanes);
@@ -233,28 +207,19 @@ std::vector<T> SelectEditor::generate(size_t start_id, size_t end_id, size_t ind
     size_t lid = start_id;
     while (lid <= end_id) {
         T object(index++, lid);
-        size_t linkid = calculateLinkID<T, U>(object, lanes);
+        size_t linkid = calculateLinkID(object, lanes);
         object.linkid = linkid;
-
         objects.push_back(object);
-        std::cout << "object:" << object << std::endl;
-        //TODO:calculate next id
+//        std::cout << "object:" << object << std::endl;
         lid++;
     }
 
     return objects;
 }
 
-
-template <class T>
-size_t SelectEditor::nextID(const T& obj) const {
-    return 1;
-    Line line = VectorMapSingleton::getInstance()->findByID(Key<Line>(obj.lid));
-}
-
 template <class T, class U>
 size_t SelectEditor::calculateLinkID(const T& obj, const std::vector<U>& lanes) const {
-    size_t lid = obj.lid;
+    size_t lid = getObjectId(obj);
 
     Line line = VectorMapSingleton::getInstance()->findByID(Key<Line>(lid));
     Point point1 = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.bpid));
@@ -282,6 +247,24 @@ size_t SelectEditor::calculateLinkID(const T& obj, const std::vector<U>& lanes) 
     return linkId;
 }
 
+template<class T>
+size_t SelectEditor::getObjectId(const T &obj) const {
+    size_t id = 0;
+
+    if (std::is_same<T,CrossWalk>::value) {
+        auto tmp = reinterpret_cast<const CrossWalk&>(obj);
+        Area area = VectorMapSingleton::getInstance()->findByID(Key<Area>(tmp.aid));
+        id = area.slid;
+    } else if (std::is_same<T,RoadEdge>::value){
+        auto tmp = reinterpret_cast<const RoadEdge&>(obj);
+        id = tmp.lid;
+    } else if (std::is_same<T,StopLine>::value){
+        auto tmp = reinterpret_cast<const StopLine&>(obj);
+        id = tmp.lid;
+    }
+
+    return id;
+}
 
 double SelectEditor::distanceBewteen2DLineSegment(const osg::Vec3d& p1, const osg::Vec3d& p2,
         const osg::Vec3d& q1, const osg::Vec3d& q2) const {
@@ -344,3 +327,4 @@ double SelectEditor::distanceBewteen2DLineSegment(const osg::Vec3d& p1, const os
 
     return distance;
 }
+

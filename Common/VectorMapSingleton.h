@@ -29,6 +29,7 @@ using m_map::Handle;
 using m_map::Filter;
 
 using category_t = unsigned long;
+
 enum Category : category_t
 {
     NONE = 0LLU,
@@ -46,7 +47,7 @@ enum Category : category_t
     // Object Data
     ROAD_EDGE = 1LLU << 6,
     STOP_LINE = 1LLU << 7,
-    CROSS_WALK = 1LLU << 9,
+    CROSS_WALK = 1LLU << 8,
 
     ALL = (1LLU << 16) - 1
 };

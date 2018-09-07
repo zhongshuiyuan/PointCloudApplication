@@ -19,7 +19,6 @@
 #include <QtCore/QDebug>
 
 #include "EditorDialog.h"
-#include "../Common/VectorMapSingleton.h"
 #include "../Common/common.h"
 
 EditorDialog::EditorDialog(QStringList& itemInfo, QWidget *parent) :

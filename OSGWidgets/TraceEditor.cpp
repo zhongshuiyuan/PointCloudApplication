@@ -13,8 +13,9 @@
 #include <osg/ShapeDrawable>
 #include <osgText/Text>
 
-#include "TraceEditor.h"
 #include "NodeNames.h"
+#include "TraceEditor.h"
+#include "VMapDrawable.h"
 #include "NodeTreeSearch.h"
 #include "../Common/tracer.h"
 #include "../Common/VectorMapSingleton.h"
@@ -264,8 +265,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 if (i == 0) {
                     //search connected lane
                     std::vector<Lane> connected_lanes = VectorMapSingleton::getInstance()->findByFilter([&](const Lane& lane) {
-                        if (lane.fnid == backward_node.nid) return true;
-                        else return false;
+                        return lane.fnid == backward_node.nid;
                     });
 
                     //update connected lane
@@ -275,6 +275,20 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                         else if (connected_lane.flid2 == 0) { connected_lane.flid2 = cur_min_lane_index; }
                         else { connected_lane.flid3 = cur_min_lane_index; }
 
+                        //clockwise judgement
+                        size_t jct = connected_lane.jct;
+                        {
+                            bool is_clockwise = clockwiseJudgement(connected_lane, forward_node);
+                            if (is_clockwise) {
+                                if (jct == 1) jct = 5;
+                                else jct = 2;
+                            } else {
+                                if (jct == 2) jct = 5;
+                                else jct = 1;
+                            }
+                        }
+
+                        connected_lane.jct = jct;
                         backward_lane_id = connected_lane.lnid;
                         std::cout << "connected lane: " << connected_lane << std::endl;
                         update_lanes.push_back(connected_lane);
@@ -284,8 +298,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 //forward connection
                 if (i == nodes.size() - 2) {
                     std::vector<Lane> connected_lanes = VectorMapSingleton::getInstance()->findByFilter([&](const Lane& lane) {
-                        if (lane.bnid == forward_node.nid) return true;
-                        else return false;
+                        return lane.bnid == forward_node.nid;
                     });
 
                     if (!connected_lanes.empty()) {
@@ -294,13 +307,30 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                         else if (connected_lane.blid2 == 0) { connected_lane.blid2 = cur_min_lane_index; }
                         else { connected_lane.blid3 = cur_min_lane_index; }
 
+                        //clockwise judgement
+                        size_t jct = connected_lane.jct;
+                        {
+                            bool is_clockwise = clockwiseJudgement(connected_lane, backward_node);
+                            if (is_clockwise) {
+                                if (jct == 3) jct = 5;
+                                else jct = 4;
+                            } else {
+                                if (jct == 4) jct = 5;
+                                else jct = 3;
+                            }
+                        }
+
+                        connected_lane.jct = jct;
                         forward_lane_id = connected_lane.lnid;
                         std::cout << "connected lane: " << connected_lane << std::endl;
                         update_lanes.push_back(connected_lane);
                     }
                 }
 
-                lanes.emplace_back(cur_min_lane_index, cur_min_lane_index, backward_lane_id, forward_lane_id, backward_node.nid, forward_node.nid);
+                Lane cur_lane(cur_min_lane_index, cur_min_lane_index, backward_lane_id, forward_lane_id, backward_node.nid, forward_node.nid);
+                if (i == 0) cur_lane.start_end_tag = 1;
+                else if (i == nodes.size() - 2) cur_lane.start_end_tag = 2;
+                lanes.push_back(cur_lane);
 
                 //TODO update connected dtlanes
                 double apara = 0.0;
@@ -316,63 +346,10 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
             VectorMapSingleton::getInstance()->update(update_lanes);
         }
 
-        //redraw lane, point
+        //redraw node, lane
         {
-            osg::ref_ptr<osg::Switch> trace_item_node =
-                    dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, trace_item_node_name));
-
-            //trace
-            int trace_index = trace_item_node->getNumChildren();
-            int start_lane_id = lanes[0].lnid;
-            int end_lane_id = lanes.back().lnid;
-            std::string type = "Lane";
-
-            osg::ref_ptr<osg::Switch> traceNode = new osg::Switch;
-            traceNode->setName(trace_item_name + std::to_string(trace_index++));
-            traceNode->setUserValue("start_id", start_lane_id);
-            traceNode->setUserValue("end_id", end_lane_id);
-            traceNode->setUserValue("item_type", type);
-            trace_item_node->addChild(traceNode);
-            {
-                osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
-                for (const auto& point : points) {
-                    vertices->push_back(osg::Vec3d(point.bx, point.ly, point.h));
-                }
-
-                osg::ref_ptr<osg::Vec3Array> colors = new osg::Vec3Array;
-                colors->push_back(osg::Vec3(1.0, 1.0, 0.0));
-
-                osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
-                geom->setVertexArray(vertices.get());
-                geom->setColorArray(colors.get());
-                geom->setColorBinding(osg::Geometry::BIND_OVERALL);
-                geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_STRIP, 0, vertices->size()));
-
-                osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-                geode->setName("Lane");
-                geode->addDrawable(geom);
-
-                traceNode->addChild(geode);
-            }
-
-            //node
-            {
-                for (int i = 0; i < nodes.size(); ++i) {
-                    int local_node_index = nodes[i].nid;
-                    const Point& point = points[i];
-                    osg::Vec3d local_node(point.bx, point.ly, point.h);
-
-                    osg::ref_ptr<osg::Geode> node_geode = new osg::Geode;
-                    node_geode->setName("node");
-                    node_geode->setUserValue("id", local_node_index);
-                    node_geode->setUserValue("pos", local_node);
-
-                    osg::ref_ptr<osg::ShapeDrawable> point_sphere = new osg::ShapeDrawable(new osg::Sphere(local_node, 0.1f));
-                    point_sphere->setColor(osg::Vec4f(1.0, 1.0, 0.0, 1.0));
-                    node_geode->addDrawable(point_sphere);
-                    traceNode->addChild(node_geode);
-                }
-            }
+            VMapDrawable vMapDrawable(root_node_);
+            vMapDrawable.drawTraceNode(lanes, Lane());
         }
 
         //debug
@@ -384,42 +361,6 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 std::cout << "lane: " << lane << std::endl;
             for (auto dtlane : dtlanes)
                 std::cout << "dtlane: " << dtlane << std::endl;
-        }
-
-        //text
-        {
-            osg::ref_ptr<osg::Switch> node_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, node_text_node_name));
-            for (const auto& node: nodes) {
-                const auto& point = VectorMapSingleton::getInstance()->findByID(Key<Point>(node.pid));
-
-                osg::Vec3d pos(point.bx, point.ly, point.h);
-                std::string name = std::to_string(node.nid);
-                osg::Vec4f color(0.0, 1.0, 0.0, 0.5);
-
-                node_text_node->addChild(drawTextGeode(pos, name, color));
-            }
-
-            osg::ref_ptr<osg::Switch> lane_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, lane_text_node_name));
-            for (const auto& lane : lanes) {
-                const auto& backward_node = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.bnid));
-                const auto& forward_node = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.fnid));
-
-                const auto& backward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(backward_node.pid));
-                const auto& forward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(forward_node.pid));
-
-                osg::Vec3d pos1(backward_point.bx, backward_point.ly, backward_point.h);
-                osg::Vec3d pos2(forward_point.bx, forward_point.ly, forward_point.h);
-
-                osg::Vec3d pos = ( pos1 + pos2 ) / 2;
-                std::string name = std::to_string(lane.lnid);
-                osg::Vec4f color(1.0, 0.0, 0.0, 0.5);
-
-                lane_text_node->addChild(drawTextGeode(pos, name, color));
-            }
-        }
-
-        //emit
-        {
         }
 
         cleanUp(true);
@@ -479,24 +420,36 @@ bool TraceEditor::isCurveLine(const point_pair_vec& points) const {
     double angle = std::acos(alpha) * 180 / PI;
     printf ("The arc cosine of %f is %f degrees.\n", alpha, angle);
 
-    if (angle < 30 and angle > -30) return false;
+    return (angle > 30 or angle < -30);
 
-    return true;
 }
 
+bool TraceEditor::isClockWiseOrNot(const osg::Vec3d &p1, const osg::Vec3d &p2, const osg::Vec3d &p3) const {
+    osg::Vec3d p12 = p2 - p1;
+    osg::Vec3d p13 = p3 - p1;
+    osg::Vec3d normal = p12 ^ p13;
 
-osg::ref_ptr<osg::Geode> TraceEditor::drawTextGeode(const osg::Vec3d& pos,
-                                       const std::string& content, const osg::Vec4f& color) const {
-    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-    geode->setName(content);
+    return normal.z() < 0;
+}
 
-    osg::ref_ptr<osgText::Text> text = new osgText::Text;
-    text->setCharacterSize(0.2);
-    text->setAxisAlignment( osgText::TextBase::XY_PLANE );
-    text->setPosition(pos);
-    text->setText(content);
-    text->setColor(color);
+bool TraceEditor::clockwiseJudgement(const m_map::Lane &lane, const m_map::Node &node) {
+    bool is_clockwise = true;
 
-    geode->addDrawable(text);
-    return geode.release();
+    Node n1 = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.bnid));
+    Node n2 = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.fnid));
+    Node n3 = node;
+
+    Point p1 = VectorMapSingleton::getInstance()->findByID(Key<Point>(n1.pid));
+    Point p2 = VectorMapSingleton::getInstance()->findByID(Key<Point>(n2.pid));
+    Point p3 = VectorMapSingleton::getInstance()->findByID(Key<Point>(n3.pid));
+
+    if (p1.pid > 0 and p2.pid > 0 and p3.pid > 0) {
+        osg::Vec3d v1(p1.bx, p1.ly, p1.h);
+        osg::Vec3d v2(p2.bx, p2.ly, p2.h);
+        osg::Vec3d v3(p3.bx, p3.ly, p3.h);
+
+        is_clockwise = isClockWiseOrNot(v1, v2, v3);
+    }
+
+    return is_clockwise;
 }

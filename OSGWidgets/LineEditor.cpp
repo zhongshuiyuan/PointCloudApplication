@@ -10,10 +10,10 @@
 
 #include <osg/ValueObject>
 #include <osg/ShapeDrawable>
-#include <osgText/Text>
 
-#include "LineEditor.h"
 #include "NodeNames.h"
+#include "LineEditor.h"
+#include "VMapDrawable.h"
 #include "NodeTreeSearch.h"
 #include "../Common/tracer.h"
 #include "../Common/VectorMapSingleton.h"
@@ -254,59 +254,8 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 
         //redraw line, point
         {
-            osg::ref_ptr<osg::Switch> vector_item_node =
-                    dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, vector_item_node_name));
-            //vector
-            int vector_index = vector_item_node->getNumChildren();
-            int start_line_id = lines[0].lid;
-            int end_line_id = lines.back().lid;
-            std::string type = "Uncertain";
-
-            osg::ref_ptr<osg::Switch> vectorNode = new osg::Switch;
-            vectorNode->setName(vector_item_name + std::to_string(vector_index++));
-            vectorNode->setUserValue("start_id", start_line_id);
-            vectorNode->setUserValue("end_id", end_line_id);
-            vectorNode->setUserValue("item_type", type);
-            vector_item_node->addChild(vectorNode);
-            //line
-            {
-                osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
-                for (const auto& point : points) {
-                    vertices->push_back(osg::Vec3d(point.bx, point.ly, point.h));
-                }
-
-                osg::ref_ptr<osg::Vec3Array> colors = new osg::Vec3Array;
-                colors->push_back(osg::Vec3(1.0, 1.0, 1.0));
-
-                osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
-                geom->setVertexArray(vertices.get());
-                geom->setColorArray(colors.get());
-                geom->setColorBinding(osg::Geometry::BIND_OVERALL);
-                geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_STRIP, 0, vertices->size()));
-
-                osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-                geode->setName("Line");
-                geode->addDrawable(geom);
-
-                vectorNode->addChild(geode);
-            }
-
-            //point
-            {
-                for (const auto& point : points) {
-                    int local_point_index = point.pid;
-                    osg::Vec3d local_point(point.bx, point.ly, point.h);
-
-                    osg::ref_ptr<osg::Geode> point_geode = new osg::Geode;
-                    point_geode->setName("point");
-                    point_geode->setUserValue("id", local_point_index);
-                    point_geode->setUserValue("pos", local_point);
-
-                    osg::ref_ptr<osg::ShapeDrawable> point_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.2f));
-                    point_geode->addDrawable(point_sphere);
-                    vectorNode->addChild(point_geode);
-                }
-            }
+            VMapDrawable vMapDrawable(root_node_);
+            vMapDrawable.drawVectorNode(lines, Line());
         }
 
         //debug
@@ -319,49 +268,6 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
                 std::cout << "line: " << line << std::endl;
             for (auto area : areas)
                 std::cout << "area: " << area << std::endl;
-        }
-
-        //text
-        {
-            osg::ref_ptr<osg::Switch> point_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, point_text_node_name));
-            for (const auto& point: points) {
-                osg::Vec3d pos(point.bx, point.ly, point.h);
-                std::string name = std::to_string(point.pid);
-                osg::Vec4f color(0.0, 1.0, 0.0, 0.5);
-
-                point_text_node->addChild(drawTextGeode(pos, name, color));
-            }
-
-            osg::ref_ptr<osg::Switch> area_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, area_text_node_name));
-            for (const auto& area: areas) {
-                const auto& start_line = VectorMapSingleton::getInstance()->findByID(Key<Line>(area.slid));
-                const auto& first_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(start_line.bpid));
-
-                osg::Vec3d pos(first_point.bx, first_point.ly, first_point.h);
-                std::string name = std::to_string(area.aid);
-                osg::Vec4f color(0.0, 1.0, 1.0, 0.5);
-
-                area_text_node->addChild(drawTextGeode(pos, name, color));
-            }
-
-            osg::ref_ptr<osg::Switch> line_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, line_text_node_name));
-            for (const auto& line : lines) {
-
-                const auto& backward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.bpid));
-                const auto& forward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.fpid));
-                osg::Vec3d pos1(backward_point.bx, backward_point.ly, backward_point.h);
-                osg::Vec3d pos2(forward_point.bx, forward_point.ly, forward_point.h);
-
-                osg::Vec3d pos = ( pos1 + pos2 ) / 2;
-                std::string name = std::to_string(line.lid);
-                osg::Vec4f color(1.0, 0.0, 0.0, 0.5);
-
-                line_text_node->addChild(drawTextGeode(pos, name, color));
-            }
-        }
-
-        //emit
-        {
         }
 
         cleanUp(true);
@@ -383,22 +289,6 @@ void LineEditor::cleanUp(bool all) {
 void LineEditor::updateIndex() {
     //update cur_point_index in case traceEditor add new points!
     cur_point_index = VectorMapSingleton::getInstance()->getMaxPointIndex() + 1;
-}
-
-osg::ref_ptr<osg::Geode> LineEditor::drawTextGeode(const osg::Vec3d& pos,
-        const std::string& content, const osg::Vec4f& color) const {
-    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
-    geode->setName(content);
-
-    osg::ref_ptr<osgText::Text> text = new osgText::Text;
-    text->setCharacterSize(0.5);
-    text->setAxisAlignment( osgText::TextBase::XY_PLANE );
-    text->setPosition(pos);
-    text->setText(content);
-    text->setColor(color);
-
-    geode->addDrawable(text);
-    return geode.release();
 }
 
 std::ostream& operator<<(std::ostream& os, const osg::Vec3d& point){

@@ -4,9 +4,15 @@
 //
 
 #include <iostream>
+#include <fstream>
+#include <bitset>
 
 #include <QtWidgets/QGridLayout>
+#include <QtCore/QDir>
+#include <QtCore/QString>
+#include <QtCore/QFileInfoList>
 
+#include <osg/ValueObject>
 #include <osg/Geometry>
 #include <osg/Material>
 #include <osg/Light>
@@ -21,6 +27,7 @@
 #include "OSGWidget.h"
 #include "NodeTreeInfo.h"
 #include "TextController.h"
+#include "VMapDrawable.h"
 #include "../Common/VectorMapSingleton.h"
 #include "../Common/tracer.h"
 
@@ -211,6 +218,80 @@ osgQt::GraphicsWindowQt* OSGWidget::createGraphicsWindow(int x, int y, int w, in
     return new osgQt::GraphicsWindowQt(traits.get());
 }
 
+void OSGWidget::loadVectorMap() {
+    QDir dir("../../vmap");
+
+    QStringList filters;
+    filters << "*.csv";
+    dir.setNameFilters(filters);
+
+    category_t category = Category::NONE;
+    QFileInfoList list = dir.entryInfoList();
+    for(const QFileInfo& fileInfo : list){
+        std::string file_path = fileInfo.filePath().toStdString();
+        std::string file_name = fileInfo.fileName().toStdString();
+
+        if (file_name == "point.csv") {
+            category |= Category::POINT;
+
+            std::vector<Point> points = m_map::parse<Point>(file_path);
+            VectorMapSingleton::getInstance()->update(points);
+        }
+        else if (file_name == "line.csv") {
+            category |= Category::LINE;
+
+            std::vector<Line> all_lines = m_map::parse<Line>(file_path);
+            VectorMapSingleton::getInstance()->update(all_lines);
+        }
+        else if (file_name == "area.csv") {
+            category |= Category::AREA;
+
+            std::vector<Area> areas = m_map::parse<Area>(file_path);
+            VectorMapSingleton::getInstance()->update(areas);
+        }
+        else if (file_name == "dtlane.csv") {
+            category |= Category::DTLANE;
+
+            std::vector<dtLane> dtlanes = m_map::parse<dtLane>(file_path);
+            VectorMapSingleton::getInstance()->update(dtlanes);
+        }
+        else if (file_name == "node.csv") {
+            category |= Category::NODE;
+
+            std::vector<Node> nodes = m_map::parse<Node>(file_path);
+            VectorMapSingleton::getInstance()->update(nodes);
+        }
+        else if (file_name == "lane.csv") {
+            category |= Category::LANE;
+
+            std::vector<Lane> lanes = m_map::parse<Lane>(file_path);
+            VectorMapSingleton::getInstance()->update(lanes);
+        }
+        else if (file_name == "roadedge.csv") {
+            category |= Category::ROAD_EDGE;
+
+            std::vector<RoadEdge> road_edges = m_map::parse<RoadEdge>(file_path);
+            VectorMapSingleton::getInstance()->update(road_edges);
+        }
+        else if (file_name == "stopline.csv") {
+            category |= Category::STOP_LINE;
+
+            std::vector<StopLine> stop_lines = m_map::parse<StopLine>(file_path);
+            VectorMapSingleton::getInstance()->update(stop_lines);
+        }
+        else if (file_name == "crosswalk.csv") {
+            category |= Category::CROSS_WALK;
+
+            std::vector<CrossWalk> cross_walks = m_map::parse<CrossWalk>(file_path);
+            VectorMapSingleton::getInstance()->update(cross_walks);
+        }
+    }
+
+    std::cout << "load vmap: " << std::bitset<32>(category) << " done!"<< std::endl;
+
+    initVectorMap();
+}
+
 void OSGWidget::readPCDataFromFile(const QFileInfo& file_info){
     pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PCDReader reader;
@@ -278,3 +359,163 @@ void OSGWidget::activeSelectEditor(bool is_active) {
 void OSGWidget::saveVectorMapToDir(const std::string& dir_path) const {
     VectorMapSingleton::getInstance()->saveToDir(dir_path);
 }
+
+void OSGWidget::initVectorMap() {
+    TRACER;
+    std::vector<RoadEdge> road_edges = VectorMapSingleton::getInstance()->findByFilter([](const RoadEdge& object) { return true;} );
+    if (!road_edges.empty()) drawVectorItems<RoadEdge>(road_edges);
+
+    std::vector<StopLine> stop_lines = VectorMapSingleton::getInstance()->findByFilter([](const StopLine& object) { return true;} );
+    if (!stop_lines.empty()) drawVectorItems<StopLine>(stop_lines);
+
+    std::vector<Lane> lanes = VectorMapSingleton::getInstance()->findByFilter([](const Lane& object) { return true;} );
+    if (!lanes.empty()) drawTraceItems<Lane>(lanes);
+}
+
+void OSGWidget::drawAllLines() {
+
+    std::vector<Line> all_lines = VectorMapSingleton::getInstance()->findByFilter([](const Line& line){ return true; });
+    VMapDrawable vMapDrawable(root_node_);
+
+    auto iter = all_lines.begin();
+    while (iter != all_lines.end()) {
+        //start_line is end_line
+        if ((*iter).blid == 0 && (*iter).flid == 0) {
+            ++iter;
+            continue;
+        }
+
+        //start_line
+        auto start_iter = std::find_if(iter, all_lines.end(), [](const Line& line) {
+            return line.blid == 0;
+        });
+
+        //end_line
+        auto end_iter = std::find_if(start_iter, all_lines.end(), [](const Line& line) {
+            return line.flid == 0;
+        });
+
+        //move on
+        iter = ++end_iter;
+
+        //draw lines
+        {
+            std::vector<Line> lines;
+            for (auto it = start_iter; it != end_iter + 1 && it != lines.end(); ++it) {
+                lines.push_back(*it);
+            }
+
+            std::vector<Point> points;
+            for (const Line& line : lines) {
+                Point start_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.bpid));
+                points.push_back(start_point);
+            }
+            Point end_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(lines.back().fpid));
+            points.push_back(end_point);
+
+//            std::cout << "***" << std::endl;
+//            for (auto line : lines) {
+//                std::cout << line << std::endl;;
+//            }
+//            std::cout << "---" << std::endl;
+//            for (auto point : points) {
+//                std::cout << point << std::endl;
+//            }
+            vMapDrawable.drawVectorNode(lines, Line());
+        }
+    }
+}
+
+template<class T>
+void OSGWidget::drawVectorItems(const std::vector<T> &objects) {
+    if (objects.empty()) return;
+
+    std::vector<Line> all_lines;
+    for (const T& object : objects) {
+        Line line = VectorMapSingleton::getInstance()->findByID(Key<Line>(object.lid));
+        all_lines.push_back(line);
+    }
+    if (all_lines.size() != objects.size()) return;
+    VMapDrawable vMapDrawable(root_node_);
+
+    auto iter = all_lines.begin();
+    while (iter != all_lines.end()) {
+        //start_line is end_line
+        if ((*iter).blid == 0 && (*iter).flid == 0) {
+            std::vector<Line> lines = { *iter };
+
+            Point start_point = VectorMapSingleton::getInstance()->findByID(Key<Point>((*iter).bpid));
+            Point end_point = VectorMapSingleton::getInstance()->findByID(Key<Point>((*iter).fpid));
+            std::vector<Point> points = { start_point, end_point };
+
+            auto index = std::distance(all_lines.begin(), iter);
+            const T& object = objects[index];
+
+            vMapDrawable.drawVectorNode(lines, object);
+
+            ++iter;
+            continue;
+        }
+
+        //start_line
+        auto start_iter = std::find_if(iter, all_lines.end(), [](const Line& line) {
+            return line.blid == 0;
+        });
+
+        //end_line
+        auto end_iter = std::find_if(start_iter, all_lines.end(), [](const Line& line) {
+            return line.flid == 0;
+        });
+
+        //move on
+        iter = end_iter + 1;
+
+        //draw lines
+        {
+            std::vector<Line> lines;
+            for (auto it = start_iter; it != iter; ++it) {
+                lines.push_back(*it);
+            }
+
+            auto index = std::distance(all_lines.begin(), start_iter);
+            const T& object = objects[index];
+
+           vMapDrawable.drawVectorNode(lines, object);
+        }
+    }
+}
+
+template<class T>
+void OSGWidget::drawTraceItems(const std::vector<T> &objects) {
+    if (objects.empty()) return;
+
+    VMapDrawable vMapDrawable(root_node_);
+
+    auto iter = objects.begin();
+    while (iter != objects.end()) {
+        auto start_iter = std::find_if(iter, objects.end(), [](const T& object) {
+            return object.start_end_tag == 1;
+        });
+
+        auto end_iter = std::find_if(start_iter, objects.end(), [](const T& object) {
+            return object.start_end_tag == 2;
+        });
+
+        //move on
+        iter = end_iter + 1;
+
+        //draw lanes
+        {
+            std::vector<T> lanes;
+            for (auto it = start_iter; it != iter; ++it) {
+                lanes.push_back(*it);
+            }
+
+            auto index = std::distance(objects.begin(), start_iter);
+            const T& object = objects[index];
+
+            vMapDrawable.drawTraceNode(lanes, object);
+        }
+    }
+}
+

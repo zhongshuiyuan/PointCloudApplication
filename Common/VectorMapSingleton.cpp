@@ -247,7 +247,7 @@ void VectorMapSingleton::saveToDir(const std::string& dir_path) const {
     //lane
     {
         std::string header = "LnID,DID,BLID,FLID,BNID,FNID,JCT,BLID2,BLID3,BLID4,FLID2,FLID3,FLID4,"
-                             "ClossID,Span,LCnt,Lno,LaneType,LimitVel,RefVel,RoadSecID,LaneChgFG";
+                             "ClossID,Span,LCnt,Lno,LaneType,LimitVel,RefVel,RoadSecID,LaneChgFG,Start_End_tag";
         std::string file_path = dir_path + "/lane.csv";
 
         lanes_.output(file_path, header);
@@ -349,7 +349,8 @@ std::ostream& operator<<(std::ostream& os, const Lane& obj)
        << obj.limitvel << ","
        << obj.refvel << ","
        << obj.roadsecid << ","
-       << obj.lanecfgfg << ",";
+       << obj.lanecfgfg << ","
+       << obj.start_end_tag;
     return os;
 }
 
@@ -487,20 +488,12 @@ std::istream& operator>>(std::istream& is, Lane& obj)
     obj.span = std::stod(columns[14]);
     obj.lcnt = std::stoi(columns[15]);
     obj.lno = std::stoi(columns[16]);
-    if (n == 17)
-    {
-        obj.lanetype = 0;
-        obj.limitvel = 0;
-        obj.refvel = 0;
-        obj.roadsecid = 0;
-        obj.lanecfgfg = 0;
-        return is;
-    }
     obj.lanetype = std::stoi(columns[17]);
     obj.limitvel = std::stoi(columns[18]);
     obj.refvel = std::stoi(columns[19]);
     obj.roadsecid = std::stoi(columns[20]);
     obj.lanecfgfg = std::stoi(columns[21]);
+    obj.start_end_tag = std::stoi(columns[22]);
     return is;
 }
 

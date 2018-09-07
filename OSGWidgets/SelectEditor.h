@@ -9,7 +9,6 @@
 #include <iostream>
 #include <string>
 
-#include <QtCore/QStringList>
 #include <QtCore/QObject>
 
 #include <osg/Vec3d>
@@ -20,11 +19,12 @@
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIActionAdapter>
 
+
 class SelectEditor : public QObject, public osgGA::GUIEventHandler {
     Q_OBJECT
 public:
     explicit SelectEditor(osg::Switch* root);
-    ~SelectEditor() final;
+    ~SelectEditor() final = default;
 
     bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) final;
     void pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view);
@@ -32,16 +32,13 @@ public:
 private:
     template <class T, class U>
     std::vector<T> generate(size_t start_id, size_t end_id, size_t index, const std::vector<U>& lanes) const;
-
-    template <class T>
-    size_t nextID(const T& obj) const;
-
     template <class T, class U>
     size_t calculateLinkID(const T& obj, const std::vector<U>& lanes) const;
+    template <class T>
+    size_t getObjectId(const T& obj) const;
 
     double distanceBewteen2DLineSegment(const osg::Vec3d& p1, const osg::Vec3d& p2,
             const osg::Vec3d& q1, const osg::Vec3d& q2) const;
-
     void cleanUp();
 
     osg::ref_ptr<osg::Switch> root_node_;
@@ -55,7 +52,7 @@ Q_SIGNALS:
     void selectItem(QStringList itemInfo);
 
 public Q_SLOTS:
-    void getItemInfo(QStringList itemInfo);
+    void receiveItemInfo(QStringList itemInfo);
 };
 
 

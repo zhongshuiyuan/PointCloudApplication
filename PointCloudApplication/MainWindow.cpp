@@ -20,7 +20,6 @@
 #include "EditorDialog.h"
 #include "../OSGWidgets/OSGWidget.h"
 #include "../Common/tracer.h"
-#include "../Common/VectorMapSingleton.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -193,6 +192,7 @@ void MainWindow::openFile() {
         osgwidget_->readPCDataFromFile(fileInfo);
     }
 
+    osgwidget_->loadVectorMap();
     osgwidget_->initTerrainManipulator();
 }
 
@@ -208,6 +208,6 @@ void MainWindow::receiveItem(QStringList itemInfo) {
     if (itemInfo.empty()) return;
 
     auto edit_widget = new EditorDialog(itemInfo, this);
-    connect(edit_widget, SIGNAL(postItemInfo(QStringList)), osgwidget_->select_editor_, SLOT(getItemInfo(QStringList)));
+    connect(edit_widget, SIGNAL(postItemInfo(QStringList)), osgwidget_->select_editor_, SLOT(receiveItemInfo(QStringList)));
     edit_widget->exec();
 }
