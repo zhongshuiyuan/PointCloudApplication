@@ -28,7 +28,7 @@ public:
 
 private:
     void updateIndex();
-    void cleanUp(bool all = true);
+    void cleanUp();
 
     osg::ref_ptr<osg::Switch> root_node_;
     osg::ref_ptr<osg::Switch> temp_node_;

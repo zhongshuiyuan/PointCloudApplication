@@ -32,12 +32,12 @@ public:
 
 private:
     void updateIndex();
-    void cleanUp(bool all = true);
     bool isCurveLine(const point_pair_vec& points) const;
     std::vector<osg::Vec3d> calculateInterpolationPoints(const osg::Vec3d& start_point, const osg::Vec3d& end_point) const;
     bool clockwiseJudgement(const m_map::Lane& lane, const m_map::Node& node);
     bool isClockWiseOrNot(const osg::Vec3d& p1, const osg::Vec3d& p2, const osg::Vec3d& p3) const;
 
+    void cleanUp();
     osg::ref_ptr<osg::Switch> root_node_;
     osg::ref_ptr<osg::Switch> temp_node_;
     osg::ref_ptr<osg::Geode>  temp_line_geode_;

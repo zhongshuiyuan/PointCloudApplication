@@ -65,7 +65,8 @@ public:
         {
             osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
             for (const auto& point : points) {
-                vertices->push_back(osg::Vec3d(point.bx, point.ly, point.h));
+                //reverse x y
+                vertices->push_back(osg::Vec3d(point.ly, point.bx, point.h));
             }
 
             osg::ref_ptr<osg::Vec3Array> colors = new osg::Vec3Array;
@@ -88,14 +89,15 @@ public:
         {
             for (const auto& point : points) {
                 int local_point_index = point.pid;
-                osg::Vec3d local_point(point.bx, point.ly, point.h);
+                //reverse x y
+                osg::Vec3d local_point(point.ly, point.bx, point.h);
 
                 osg::ref_ptr<osg::Geode> point_geode = new osg::Geode;
                 point_geode->setName("point");
                 point_geode->setUserValue("id", local_point_index);
                 point_geode->setUserValue("pos", local_point);
 
-                osg::ref_ptr<osg::ShapeDrawable> point_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.2f));
+                osg::ref_ptr<osg::ShapeDrawable> point_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.15f));
                 point_geode->addDrawable(point_sphere);
                 vectorNode->addChild(point_geode);
             }
@@ -105,7 +107,8 @@ public:
         {
             osg::ref_ptr<osg::Switch> point_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, point_text_node_name));
             for (const auto& point: points) {
-                osg::Vec3d pos(point.bx, point.ly, point.h);
+                //reverse x y
+                osg::Vec3d pos(point.ly, point.bx, point.h);
                 std::string name = std::to_string(point.pid);
                 osg::Vec4f color(0.0, 1.0, 0.0, 0.5);
 
@@ -117,7 +120,8 @@ public:
 //            const auto& start_line = VectorMapSingleton::getInstance()->findByID(Key<Line>(area.slid));
 //            const auto& first_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(start_line.bpid));
 //
-//            osg::Vec3d pos(first_point.bx, first_point.ly, first_point.h);
+//            //reverse x y
+//            osg::Vec3d pos(first_point.ly, first_point.bx, first_point.h);
 //            std::string name = std::to_string(area.aid);
 //            osg::Vec4f color(0.0, 1.0, 1.0, 0.5);
 //
@@ -129,8 +133,9 @@ public:
 
                 const auto& backward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.bpid));
                 const auto& forward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(line.fpid));
-                osg::Vec3d pos1(backward_point.bx, backward_point.ly, backward_point.h);
-                osg::Vec3d pos2(forward_point.bx, forward_point.ly, forward_point.h);
+                //reverse x y
+                osg::Vec3d pos1(backward_point.ly, backward_point.bx, backward_point.h);
+                osg::Vec3d pos2(forward_point.ly, forward_point.bx, forward_point.h);
 
                 osg::Vec3d pos = ( pos1 + pos2 ) / 2;
                 std::string name = std::to_string(line.lid);
@@ -180,7 +185,8 @@ public:
         {
             osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
             for (const auto& point : points) {
-                vertices->push_back(osg::Vec3d(point.bx, point.ly, point.h));
+                //reverse x y
+                vertices->push_back(osg::Vec3d(point.ly, point.bx, point.h));
             }
 
             osg::ref_ptr<osg::Vec3Array> colors = new osg::Vec3Array;
@@ -203,7 +209,8 @@ public:
         for (int i = 0; i < nodes.size(); ++i) {
             int local_node_index = nodes[i].nid;
             const Point& point = points[i];
-            osg::Vec3d local_node(point.bx, point.ly, point.h);
+            //reverse x y
+            osg::Vec3d local_node(point.ly, point.bx, point.h);
 
             osg::ref_ptr<osg::Geode> node_geode = new osg::Geode;
             node_geode->setName("node");
@@ -222,7 +229,8 @@ public:
             for (const auto& node: nodes) {
                 const auto& point = VectorMapSingleton::getInstance()->findByID(Key<Point>(node.pid));
 
-                osg::Vec3d pos(point.bx, point.ly, point.h);
+                //reverse x y
+                osg::Vec3d pos(point.ly, point.bx, point.h);
                 std::string name = std::to_string(node.nid);
                 osg::Vec4f color(0.0, 1.0, 0.0, 0.5);
 
@@ -237,8 +245,8 @@ public:
                 const auto& backward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(backward_node.pid));
                 const auto& forward_point = VectorMapSingleton::getInstance()->findByID(Key<Point>(forward_node.pid));
 
-                osg::Vec3d pos1(backward_point.bx, backward_point.ly, backward_point.h);
-                osg::Vec3d pos2(forward_point.bx, forward_point.ly, forward_point.h);
+                osg::Vec3d pos1(backward_point.ly, backward_point.bx, backward_point.h);
+                osg::Vec3d pos2(forward_point.ly, forward_point.bx, forward_point.h);
 
                 osg::Vec3d pos = ( pos1 + pos2 ) / 2;
                 std::string name = std::to_string(lane.lnid);

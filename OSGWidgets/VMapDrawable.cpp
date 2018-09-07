@@ -102,6 +102,9 @@ QStringList VMapDrawable::getNodeValue(osg::Node *node) {
         itemInfo.append(QString::number(lno));
     }
 
+    while (itemInfo.size() < 4)
+        itemInfo.push_back("");
+
     return itemInfo;
 }
 

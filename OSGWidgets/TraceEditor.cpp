@@ -126,11 +126,14 @@ bool TraceEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
 
 void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 
-    if(selected_points.empty()) updateIndex();
+    if (selected_points.empty()) {
+        updateIndex();
+        cleanUp();
+    }
 
     if (ea.getButton() == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
-        double w = 3.0f;
-        double h = 3.0f;
+        double w = 2.5f;
+        double h = 2.5f;
 
         osg::ref_ptr<osgUtil::PolytopeIntersector> picker = new osgUtil::PolytopeIntersector(
                 osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);
@@ -139,39 +142,39 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
 
         //intersection check
         if (picker->containsIntersections()) {
-            osg::NodePath all_node_path = picker->getFirstIntersection().nodePath;
 
-            //first intersection
-            auto iter = picker->getIntersections().begin();
-            if (iter != picker->getIntersections().end())
-            {
-                osg::Vec3d local_point(iter->localIntersectionPoint);
-                int local_point_index = 0;
+            osg::Vec3d local_point;
+            int local_point_index = 0;
 
-                //Is it connected with former node ?
-                auto child_node = all_node_path.back();
+            bool is_connected = false;
+            auto all_intersection = picker->getIntersections();
+            for (const auto& intersection : all_intersection) {
+                auto child_node = intersection.nodePath.back();
                 if (child_node->getName() == "node") {
+//                    std::cout << "connect!" << std::endl;
+                    is_connected = true;
                     child_node->getUserValue("pos", local_point);
                     child_node->getUserValue("id", local_point_index);
+                    break;
                 }
-                else
-                {
-                    local_point_index = cur_point_index++;
-
-                    osg::ref_ptr<osg::Geode> node_geode = new osg::Geode;
-                    node_geode->setName("node");
-                    node_geode->setUserValue("pos", local_point);
-                    node_geode->setUserValue("id", local_point_index);
-
-                    osg::ref_ptr<osg::ShapeDrawable> node_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.1f));
-                    node_sphere->setColor(osg::Vec4f(1.0, 1.0, 0.0, 1.0));
-                    node_geode->addDrawable(node_sphere);
-                    temp_node_->addChild(node_geode);
-                }
-
-                std::cout << "local point: " << local_point_index << std::endl;
-                selected_points.emplace_back(std::make_pair(local_point_index, local_point));
             }
+            if (!is_connected) {
+                local_point = picker->getIntersections().begin()->localIntersectionPoint;
+                local_point_index = cur_point_index++;
+
+                osg::ref_ptr<osg::Geode> node_geode = new osg::Geode;
+                node_geode->setName("node");
+                node_geode->setUserValue("pos", local_point);
+                node_geode->setUserValue("id", local_point_index);
+
+                osg::ref_ptr<osg::ShapeDrawable> node_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.1f));
+                node_sphere->setColor(osg::Vec4f(1.0, 1.0, 0.0, 1.0));
+                node_geode->addDrawable(node_sphere);
+                temp_node_->addChild(node_geode);
+            }
+
+            std::cout << "local point: " << local_point_index << std::endl;
+            selected_points.emplace_back(std::make_pair(local_point_index, local_point));
         }
 
         //draw temp line
@@ -237,7 +240,8 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 size_t point_id = cur_min_point_index++; //TODO don't judge point's exist
                 osg::Vec3d pos = std::get<1>(pair);
 
-                points.emplace_back(point_id, pos.x(), pos.y(), pos.z());
+                //reverse x y
+                points.emplace_back(point_id, pos.y(), pos.x(), pos.z());
                 nodes.emplace_back(node_id, point_id);
             }
             VectorMapSingleton::getInstance()->update(points);
@@ -363,17 +367,17 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 std::cout << "dtlane: " << dtlane << std::endl;
         }
 
-        cleanUp(true);
+        cleanUp();
     } //right button
 }
 
-void TraceEditor::cleanUp(bool all) {
+void TraceEditor::cleanUp() {
     if (temp_line_geode_)
     {
         temp_line_geode_->removeDrawables(0, temp_line_geode_->getNumDrawables());
         temp_line_geode_ = nullptr;
     }
-    if (all) temp_node_->removeChildren(0, temp_node_->getNumChildren());
+    temp_node_->removeChildren(0, temp_node_->getNumChildren());
 
     selected_points.clear();
     selected_points.shrink_to_fit();
@@ -429,7 +433,8 @@ bool TraceEditor::isClockWiseOrNot(const osg::Vec3d &p1, const osg::Vec3d &p2, c
     osg::Vec3d p13 = p3 - p1;
     osg::Vec3d normal = p12 ^ p13;
 
-    return normal.z() < 0;
+    //x - y is reversed!
+    return normal.z() > 0;
 }
 
 bool TraceEditor::clockwiseJudgement(const m_map::Lane &lane, const m_map::Node &node) {

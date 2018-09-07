@@ -123,7 +123,10 @@ bool LineEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapte
 
 void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 
-    if (selected_points.empty()) updateIndex();
+    if (selected_points.empty()) {
+        updateIndex();
+        cleanUp();
+    }
 
     if (ea.getButton() == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
         double w = 1.5f;
@@ -136,37 +139,38 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
 
         //intersection check
         if (picker->containsIntersections()) {
-            osg::NodePath all_node_path = picker->getFirstIntersection().nodePath;
+            osg::Vec3d local_point;
+            int local_point_index = 0;
 
-            //first intersection
-            auto iter = picker->getIntersections().begin();
-            if (iter != picker->getIntersections().end())
-            {
-                osg::Vec3d local_point(iter->localIntersectionPoint);
-                int local_point_index = 0;
-
-                //Is it connected with former point ?
-                auto child_node = all_node_path.back();
+            bool is_connected = false;
+            auto all_intersection = picker->getIntersections();
+            for (const auto& intersection : all_intersection) {
+                auto child_node = intersection.nodePath.back();
                 if (child_node->getName() == "point") {
+//                    std::cout << "connect!" << std::endl;
+                    is_connected = true;
                     child_node->getUserValue("pos", local_point);
                     child_node->getUserValue("id", local_point_index);
+                    break;
                 }
-                else
-                {
-                    local_point_index = cur_point_index++;
-
-                    osg::ref_ptr<osg::Geode> point_geode = new osg::Geode;
-                    point_geode->setName("point");
-                    point_geode->setUserValue("pos", local_point);
-                    point_geode->setUserValue("id", local_point_index);
-
-                    osg::ref_ptr<osg::ShapeDrawable> point_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.2f));
-                    point_geode->addDrawable(point_sphere);
-                    temp_node_->addChild(point_geode);
-                }
-                std::cout << "point: " << local_point_index << " " << local_point << std::endl;
-                selected_points.emplace_back(std::make_pair(local_point_index, local_point));
             }
+            if (!is_connected) {
+                local_point = picker->getIntersections().begin()->localIntersectionPoint;
+                local_point_index = cur_point_index++;
+
+                osg::ref_ptr<osg::Geode> node_geode = new osg::Geode;
+                node_geode->setName("point");
+                node_geode->setUserValue("pos", local_point);
+                node_geode->setUserValue("id", local_point_index);
+
+                osg::ref_ptr<osg::ShapeDrawable> node_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.15f));
+                node_sphere->setColor(osg::Vec4f(1.0, 1.0, 1.0, 1.0));
+                node_geode->addDrawable(node_sphere);
+                temp_node_->addChild(node_geode);
+            }
+
+            std::cout << "local point: " << local_point_index << std::endl;
+            selected_points.emplace_back(std::make_pair(local_point_index, local_point));
         }
 
         //draw temp line
@@ -207,7 +211,8 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
                 size_t index = std::get<0>(pair);
                 osg::Vec3d pos = std::get<1>(pair);
 
-                points.emplace_back(index, pos.x(), pos.y(), pos.z());
+                //reverse x y
+                points.emplace_back(index, pos.y(), pos.x(), pos.z());
             }
             VectorMapSingleton::getInstance()->update(points);
         }
@@ -270,17 +275,17 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
                 std::cout << "area: " << area << std::endl;
         }
 
-        cleanUp(true);
+        cleanUp();
     } //right button
 }
 
-void LineEditor::cleanUp(bool all) {
+void LineEditor::cleanUp() {
     if (temp_line_geode_)
     {
         temp_line_geode_->removeDrawables(0, temp_line_geode_->getNumDrawables());
         temp_line_geode_ = nullptr;
     }
-    if (all) temp_node_->removeChildren(0, temp_node_->getNumChildren());
+    temp_node_->removeChildren(0, temp_node_->getNumChildren());
 
     selected_points.clear();
     selected_points.shrink_to_fit();

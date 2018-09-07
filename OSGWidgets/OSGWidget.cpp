@@ -362,6 +362,10 @@ void OSGWidget::saveVectorMapToDir(const std::string& dir_path) const {
 
 void OSGWidget::initVectorMap() {
     TRACER;
+
+    std::vector<Line> lines = VectorMapSingleton::getInstance()->findByFilter([](const Line& object) { return true;} );
+    if (!lines.empty()) drawVectorItems<Line>(lines);
+
     std::vector<RoadEdge> road_edges = VectorMapSingleton::getInstance()->findByFilter([](const RoadEdge& object) { return true;} );
     if (!road_edges.empty()) drawVectorItems<RoadEdge>(road_edges);
 

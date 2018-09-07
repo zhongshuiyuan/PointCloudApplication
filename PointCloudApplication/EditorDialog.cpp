@@ -83,6 +83,7 @@ void EditorDialog::initUI() {
         auto label = new QLabel(field_name, this);
         label->setObjectName(label_object_name);
         auto text = new QLineEdit(this);
+        text->setText(itemInfo_[j + 1]);
         text->setObjectName(text_object_name);
         text->setFixedWidth(90);
 
@@ -108,11 +109,6 @@ void EditorDialog::initUI() {
 }
 
 void EditorDialog::save() {
-    if (type_ > fields_vec.size() || fields_vec[type_].size() < 3) {
-        std::cout << "plz make sure fields is not less than 3;" << std::endl;
-        return;
-    }
-
     QStringList textInfo;
     textInfo.append(type_name_list[type_]);
 
