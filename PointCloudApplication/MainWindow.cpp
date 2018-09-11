@@ -19,6 +19,7 @@
 #include "MainWindow.h"
 #include "EditorDialog.h"
 #include "../OSGWidgets/OSGWidget.h"
+#include "../OSGWidgets/SelectEditor.h"
 #include "../Common/tracer.h"
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -177,20 +178,23 @@ void MainWindow::selectItem(bool is_active){
 void MainWindow::openFile() {
 //    QMessageBox::information(this, "Open", "Open a file");
     TRACER;
-    QDir dir("/home/zhihui/.autoware/data/map/pointcloud_map");
+    QFileInfo file_info("/home/zhihui/workspace/data/PointCloud/pointcloud_intensity.txt");
+    osgwidget_->readPCDataFromFile(file_info);
 
-    QStringList filters;
-    filters << "*.pcd";
-    dir.setNameFilters(filters);
-
-    QFileInfoList list = dir.entryInfoList();
-    for(const QFileInfo& fileInfo : list){
-        std::cout << qPrintable(QString("%1 %2").arg(fileInfo.size(), 10)
-                                        .arg(fileInfo.fileName()));
-        std::cout << std::endl;
-
-        osgwidget_->readPCDataFromFile(fileInfo);
-    }
+//    QDir dir("/home/zhihui/.autoware/data/map/pointcloud_map");
+//
+//    QStringList filters;
+//    filters << "*.pcd";
+//    dir.setNameFilters(filters);
+//
+//    QFileInfoList list = dir.entryInfoList();
+//    for(const QFileInfo& fileInfo : list){
+//        std::cout << qPrintable(QString("%1 %2").arg(fileInfo.size(), 10)
+//                                        .arg(fileInfo.fileName()));
+//        std::cout << std::endl;
+//
+//        osgwidget_->readPCDataFromFile(fileInfo);
+//    }
 
     osgwidget_->loadVectorMap();
     osgwidget_->initTerrainManipulator();
@@ -198,9 +202,17 @@ void MainWindow::openFile() {
 
 void MainWindow::saveFile() {
     TRACER;
-    std::string dir_path = "../../vmap";
+    QDir dir;
+    dir.cd("../../");
 
-    osgwidget_->saveVectorMapToDir(dir_path);
+    QString name = "vmap";
+    if (!dir.exists(name)) {
+        std::cout << "vmap doesn't exist, try to create it " << dir.mkpath(name) << std::endl;
+    }
+    dir.cd(name);
+
+    std::cout << "save to:" << dir.absolutePath().toStdString() << std::endl;
+    osgwidget_->saveVectorMapToDir(dir.absolutePath().toStdString());
 }
 
 void MainWindow::receiveItem(QStringList itemInfo) {

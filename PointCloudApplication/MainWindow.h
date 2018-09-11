@@ -23,6 +23,7 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() final = default ;
 
+    Q_DISABLE_COPY(MainWindow);
 private:
     void initUI();
 
@@ -51,7 +52,6 @@ private:
     QAction*   save_file_action;
     QAction* select_item_action;
 
-    Q_DISABLE_COPY(MainWindow);
 Q_SIGNALS:
     void setSelectedItem(QStringList itemInfo);
 
@@ -61,7 +61,6 @@ private Q_SLOTS:
     void drawLine(bool is_active);
     void drawTrace(bool is_active);
     void selectItem(bool is_active);
-
     void receiveItem(QStringList itemInfo);
 };
 

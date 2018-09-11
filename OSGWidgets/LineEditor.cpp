@@ -204,6 +204,13 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
     //right button
     if (ea.getButton() == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON && selected_points.size() >= 2)
     {
+        //hermite curve
+        {
+
+
+
+        }
+
         //update point
         std::vector<Point> points;
         {

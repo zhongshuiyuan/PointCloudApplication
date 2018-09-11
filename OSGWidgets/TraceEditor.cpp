@@ -16,10 +16,10 @@
 #include "NodeNames.h"
 #include "TraceEditor.h"
 #include "VMapDrawable.h"
+#include "DataStructure.h"
 #include "NodeTreeSearch.h"
 #include "../Common/tracer.h"
 #include "../Common/VectorMapSingleton.h"
-#include "DataStructure.h"
 using m_map::Point;
 using m_map::Node;
 using m_map::Lane;
@@ -275,9 +275,6 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                     //update connected lane
                     if (!connected_lanes.empty()) {
                         Lane& connected_lane = connected_lanes.back();
-                        if (connected_lane.flid == 0) { connected_lane.flid = cur_min_lane_index; }
-                        else if (connected_lane.flid2 == 0) { connected_lane.flid2 = cur_min_lane_index; }
-                        else { connected_lane.flid3 = cur_min_lane_index; }
 
                         //clockwise judgement
                         size_t jct = connected_lane.jct;
@@ -292,7 +289,18 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                             }
                         }
 
-                        connected_lane.jct = jct;
+                        if (connected_lane.flid == 0) {
+                            connected_lane.flid = cur_min_lane_index;
+                        }
+                        else if (connected_lane.flid2 == 0) {
+                            connected_lane.flid2 = cur_min_lane_index;
+                            connected_lane.jct = jct;
+                        }
+                        else {
+                            connected_lane.flid3 = cur_min_lane_index;
+                            connected_lane.jct = jct;
+                        }
+
                         backward_lane_id = connected_lane.lnid;
                         std::cout << "connected lane: " << connected_lane << std::endl;
                         update_lanes.push_back(connected_lane);
@@ -392,6 +400,7 @@ std::vector<osg::Vec3d> TraceEditor::calculateInterpolationPoints(const osg::Vec
     std::vector<osg::Vec3d> points;
 
     osg::Vec3d direction = end_point - start_point;
+    direction.z() = 0;
     double distance = direction.length();
     direction.normalize();
 

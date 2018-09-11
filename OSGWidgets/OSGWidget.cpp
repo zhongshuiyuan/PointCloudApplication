@@ -11,6 +11,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QString>
 #include <QtCore/QFileInfoList>
+#include <QtCore/QTextStream>
 
 #include <osg/ValueObject>
 #include <osg/Geometry>
@@ -25,11 +26,16 @@
 
 #include "NodeNames.h"
 #include "OSGWidget.h"
+#include "LineEditor.h"
+#include "TraceEditor.h"
+#include "SelectEditor.h"
 #include "NodeTreeInfo.h"
-#include "TextController.h"
 #include "VMapDrawable.h"
-#include "../Common/VectorMapSingleton.h"
+#include "TextController.h"
+#include "ENUCoorConv.hpp"
 #include "../Common/tracer.h"
+#include "../Common/VectorMapSingleton.h"
+
 
 OSGWidget::OSGWidget(QWidget* parent) :
     QWidget(parent),
@@ -41,6 +47,8 @@ OSGWidget::OSGWidget(QWidget* parent) :
     update_timer_(nullptr) {
 
 }
+
+OSGWidget::~OSGWidget()  = default;
 
 void OSGWidget::init() {
     TRACER;
@@ -293,6 +301,17 @@ void OSGWidget::loadVectorMap() {
 }
 
 void OSGWidget::readPCDataFromFile(const QFileInfo& file_info){
+    TRACER;
+    static osg::ref_ptr<osg::Switch> point_cloud_node =
+            dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, point_cloud_node_name));
+
+//    osg::ref_ptr<osg::Geode> geode = readPCLDataFromFile(file_info);
+    osg::ref_ptr<osg::Geode> geode = readTXTDataFromFile(file_info);
+
+    point_cloud_node->addChild(geode);
+}
+
+osg::Geode *OSGWidget::readPCLDataFromFile(const QFileInfo& file_info) const {
     pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PCDReader reader;
     reader.read(file_info.filePath().toStdString(), *point_cloud);
@@ -300,13 +319,11 @@ void OSGWidget::readPCDataFromFile(const QFileInfo& file_info){
     osg::ref_ptr<osg::Geode> geode = addMapPointCloud(point_cloud, osg::Vec3(0.4, 0.4, 0.4));
     geode->setName(file_info.fileName().toStdString());
 
-    osg::ref_ptr<osg::Switch> point_cloud_node =
-            dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, point_cloud_node_name));
-
-    point_cloud_node->addChild(geode.get());
+    return geode.release();
 }
 
-osg::Geode* OSGWidget::addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& mapPointCloud, osg::Vec3 color){
+osg::Geode* OSGWidget::addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& mapPointCloud,
+                                        osg::Vec3 color) const{
 
     osg::ref_ptr<osg::Geode> geode = new osg::Geode;
     osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
@@ -327,6 +344,101 @@ osg::Geode* OSGWidget::addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Pt
 
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS,0,vertices->size()));
     geode->addDrawable(geom.get());
+
+    return geode.release();
+}
+
+osg::Geode* OSGWidget::readTXTDataFromFile(const QFileInfo& file_info) const {
+    QFile f(file_info.filePath());
+    if(!f.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        std::cout << "Open failed." << std::endl;
+        return nullptr;
+    }
+
+    osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
+    std::vector<int> intensity;
+
+    QTextStream in(&f);
+    QString lineStr;
+    while(!in.atEnd())
+    {
+        lineStr = in.readLine();
+        QStringList sections = lineStr.trimmed().split(QRegExp("[, \t]"));
+        double x, y, z;
+        int i;
+        x = sections[0].toDouble();
+        y = sections[1].toDouble();
+        z = sections[2].toDouble();
+        i = sections[3].toInt();
+        vertices->push_back(osg::Vec3d(x, y, z));
+        intensity.push_back(i);
+    }
+    f.close();
+
+    osg::ref_ptr<osg::Geode> geode = addIntensityPointCloud(vertices, intensity);
+    geode->setName(file_info.fileName().toStdString());
+
+    return geode.release();
+}
+
+
+osg::Geode *OSGWidget::addIntensityPointCloud(const osg::ref_ptr<osg::Vec3Array>& vertices,
+                                              const std::vector<int> &intensity) const {
+
+    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+
+    osg::ref_ptr<osg::Vec3Array> colors = new osg::Vec3Array();
+    colors->reserve(intensity.size());
+
+    //sampling raw data to speed up
+    std::vector<int> mini_intensity;
+    for (int i = 0; i < intensity.size(); i += 100) {
+        mini_intensity.push_back(intensity[i]);
+    }
+
+    //ascending order
+    std::sort(mini_intensity.begin(), mini_intensity.end());
+
+    int min_intensity = mini_intensity[0];
+    int max_intensity = mini_intensity.back();
+
+    std::vector<osg::Vec3d> color_maps;
+    float maxi = 30.0;
+    float step = 1.0;
+    for (float i = 1.0; i <= maxi; i += step)
+    {
+        color_maps.emplace_back(i / maxi, i / maxi, i / maxi);
+        step += 0.5;
+    }
+
+    //section
+    int section_range = mini_intensity.size() / color_maps.size(); //区间长度
+    std::vector<int> intensity_ranges;
+    for (int i = section_range; i < mini_intensity.size(); i += section_range)
+    {
+        intensity_ranges.push_back(mini_intensity[i]);
+    }
+
+    //calculate color
+    for (const auto& intens : intensity)
+    {
+        auto iter = std::lower_bound(intensity_ranges.begin(), intensity_ranges.end(), intens);
+        auto dis = std::distance(intensity_ranges.begin(), iter);
+//        dis = dis == intensity_ranges.size() ? dis - 1 : dis;
+
+        colors->push_back(color_maps[dis]);
+    }
+
+
+    osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
+    geom->setVertexArray(vertices);
+
+    geom->setColorArray(colors);
+    geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+
+    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS,0,vertices->size()));
+    geode->addDrawable(geom);
 
     return geode.release();
 }
@@ -357,6 +469,26 @@ void OSGWidget::activeSelectEditor(bool is_active) {
 
 
 void OSGWidget::saveVectorMapToDir(const std::string& dir_path) const {
+    std::vector<Point> points = VectorMapSingleton::getInstance()->findByFilter([](const Point& point) { return true; });
+
+    geodetic_converter::GeodeticConverter gc;
+    gc.initialiseReference(22.5485150000, 114.0661120000, 0);
+    for(auto& point : points) {
+        double x, y, h;
+        x = point.ly;
+        y = point.bx;
+        h = point.h;
+//        std::cout << "point:" << point << std::endl;
+        double latitude, longitude, altitude;
+        latitude = longitude = altitude = 0;
+        gc.enu2Geodetic(x, y, h, &latitude, &longitude, &altitude);
+        std::cout << "latitude: " << latitude << " longitude: " << longitude << " altitude: " << altitude << std::endl;
+
+        point.b = latitude;
+        point.l = longitude;
+    }
+    VectorMapSingleton::getInstance()->update(points);
+
     VectorMapSingleton::getInstance()->saveToDir(dir_path);
 }
 
@@ -522,4 +654,5 @@ void OSGWidget::drawTraceItems(const std::vector<T> &objects) {
         }
     }
 }
+
 

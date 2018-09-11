@@ -30,17 +30,18 @@
 #include <pcl/point_cloud.h>
 #include <pcl/console/time.h>
 
-#include "LineEditor.h" //TODO 优化头文件
-#include "TraceEditor.h"
-#include "SelectEditor.h"
-
+class LineEditor;
+class TraceEditor;
+class SelectEditor;
 
 class OSGWidget : public QWidget, public osgViewer::CompositeViewer{
     Q_OBJECT
 public:
     explicit OSGWidget(QWidget* parent = nullptr);
-    ~OSGWidget() final = default;
+    ~OSGWidget() final;
 
+    Q_DISABLE_COPY(OSGWidget);
+public:
     void init();
     void loadVectorMap();
     void initTerrainManipulator();
@@ -63,8 +64,14 @@ private:
     void initVectorMap();
 
     osgQt::GraphicsWindowQt* createGraphicsWindow(int x, int y, int w, int h, const std::string& name = "", bool windowDecoration = false);
-    osg::Geode* addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& mapPointCloud, osg::Vec3 color = osg::Vec3(1.0, 1.0, 1.0));
 
+    osg::Geode* readPCLDataFromFile(const QFileInfo& file_info) const;
+    osg::Geode* addMapPointCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& mapPointCloud,
+            osg::Vec3 color = osg::Vec3(1.0, 1.0, 1.0)) const;
+
+    osg::Geode* readTXTDataFromFile(const QFileInfo& file_info) const;
+    osg::Geode* addIntensityPointCloud(const osg::ref_ptr<osg::Vec3Array>& vertices,
+            const std::vector<int>& intensity) const;
     void drawAllLines(); //test function
     template <class T>
     void drawTraceItems(const std::vector<T>& objects);
@@ -78,7 +85,6 @@ private:
     osg::ref_ptr<TraceEditor>   trace_editor_;
     QTimer* update_timer_;
 
-    Q_DISABLE_COPY(OSGWidget);
 public Q_SLOTS:
 
 };
