@@ -55,6 +55,10 @@ enum Category : category_t
 class VectorMapSingleton {
 
 public:
+    VectorMapSingleton() = default;
+    VectorMapSingleton(const VectorMapSingleton&) = delete;
+    VectorMapSingleton& operator=(const VectorMapSingleton&) = delete;
+
     static VectorMapSingleton* getInstance();
 
     size_t getMaxPointIndex() const;

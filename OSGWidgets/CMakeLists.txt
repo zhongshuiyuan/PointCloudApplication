@@ -17,7 +17,7 @@ target_link_libraries(OSGWidgets Qt5::Widgets Qt5::Core)
 
 #other module
 include_directories(../Common)
-link_directories(../cmake-build-release/Common)
+#link_directories(../cmake-build-release/Common)
 target_link_libraries(OSGWidgets Common)
 
 #osg & pcl & eigen

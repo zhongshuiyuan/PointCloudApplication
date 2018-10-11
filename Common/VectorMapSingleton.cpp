@@ -3,6 +3,7 @@
 // Contact me:wk707060335@gmail.com
 //
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 
 #include "VectorMapSingleton.h"
@@ -288,10 +289,15 @@ void VectorMapSingleton::saveToDir(const std::string& dir_path) const {
 
 std::ostream& operator<<(std::ostream& os, const Point& obj)
 {
-    os << obj.pid << ","
+    os << obj.pid << ",";
+
+    os.setf(std::ios::fixed);
+    os << std::setprecision(9)
        << obj.b << ","
-       << obj.l << ","
-       << obj.h << ","
+       << obj.l << ",";
+    os.unsetf(std::ios::fixed);
+
+    os << obj.h << ","
        << obj.bx << ","
        << obj.ly << ","
        << obj.ref << ","

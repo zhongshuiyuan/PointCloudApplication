@@ -229,6 +229,19 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
             tmp_selected_points.swap(selected_points);
         }
 
+        //successively output
+        if (0)
+        {
+            std::ofstream ofs("test.txt", std::ios::app);
+
+            ofs.setf(std::ios::fixed);;
+            for (const auto& pair : selected_points) {
+                const osg::Vec3d& p = std::get<1>(pair);
+                ofs << std::setprecision(2) << p.x() << "," << p.y() << "," << p.z() << std::endl;
+            }
+            ofs.close();
+        }
+
         //update point, node
         std::vector<Point> points;
         std::vector<Node> nodes;

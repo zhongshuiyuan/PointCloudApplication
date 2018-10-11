@@ -2,6 +2,8 @@
 // Created by WuKun on 8/24/18.
 // Contact me:wk707060335@gmail.com
 //
+//#include <thread>
+
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QToolBar>
@@ -180,6 +182,9 @@ void MainWindow::openFile() {
     TRACER;
     QFileInfo file_info("/home/zhihui/workspace/data/PointCloud/pointcloud_intensity.txt");
     osgwidget_->readPCDataFromFile(file_info);
+
+//    std::thread t(&OSGWidget::readPCDataFromFile, osgwidget_, file_info);
+//    t.detach();
 
 //    QDir dir("/home/zhihui/.autoware/data/map/pointcloud_map");
 //

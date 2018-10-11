@@ -229,12 +229,7 @@ public:
         //map_.insert(std::make_pair(key, t));
         //std::map::insert() function doesn't change pre-existing key-value
         //unless you do it in explicit way
-
-        auto it = map_.find(key);
-        if (it == map_.end())
-            map_.insert(std::make_pair(key, t));
-        else
-            map_[key] = t;
+        map_[key] = t;
 
         //C++17
         //auto [it, inserted] = map_.insert_or_assign(key, t);
@@ -282,7 +277,7 @@ public:
         }
 
         //C++17
-        //for (const auto&& [key, value] : map_) {
+        //for (const auto& [key, value] : map_) {
         //   std::cout << key.getId() << "--"<< value << std::endl;
         //}
     }

@@ -25,9 +25,10 @@ target_link_libraries(PointCloudApplication Qt5::Widgets)
 
 # Other library
 include_directories(../Common)
-link_directories(../cmake-build-release/Common)
+#link_directories(../cmake-build-release/Common)
 target_link_libraries(PointCloudApplication Common)
 
 include_directories(../OSGWidgets)
-link_directories(../cmake-build-release/OSGWidgets)
+#link_directories(../cmake-build-release/OSGWidgets)
 target_link_libraries(PointCloudApplication OSGWidgets)
+

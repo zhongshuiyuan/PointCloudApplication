@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <bitset>
+#include <iomanip>
 
 #include <QtWidgets/QGridLayout>
 #include <QtCore/QDir>
@@ -482,7 +483,9 @@ void OSGWidget::saveVectorMapToDir(const std::string& dir_path) const {
         double latitude, longitude, altitude;
         latitude = longitude = altitude = 0;
         gc.enu2Geodetic(x, y, h, &latitude, &longitude, &altitude);
-        std::cout << "latitude: " << latitude << " longitude: " << longitude << " altitude: " << altitude << std::endl;
+
+//        std::cout.setf(std::ios::fixed);;
+//        std::cout << std::setprecision(9) << "latitude: " << latitude << " longitude: " << longitude << " altitude: " << altitude << std::endl;
 
         point.b = latitude;
         point.l = longitude;
