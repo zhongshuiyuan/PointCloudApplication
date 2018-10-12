@@ -11,6 +11,7 @@
 
 #include <osg/ValueObject>
 #include <osg/ShapeDrawable>
+#include <osg/PositionAttitudeTransform>
 #include <osgText/Text>
 
 #include "NodeNames.h"
@@ -18,6 +19,7 @@
 #include "VMapDrawable.h"
 #include "DataStructure.h"
 #include "NodeTreeSearch.h"
+#include "PositionTransformer.h"
 #include "../Common/tracer.h"
 #include "../Common/VectorMapSingleton.h"
 using m_map::Point;
@@ -61,53 +63,58 @@ bool TraceEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
             _my = ea.getY();
 
             if (selected_points.empty()) return false;
+//            std::cout << "move" << selected_points.size() << std::endl;
 
             //draw mouse follow line
-            double w = 1.5f;
-            double h = 1.5f;
+            osg::ref_ptr<osgUtil::LineSegmentIntersector> picker = new osgUtil::LineSegmentIntersector
+                    (osgUtil::Intersector::PROJECTION, ea.getXnormalized(), ea.getYnormalized());
+            osgUtil::IntersectionVisitor iv(picker.get());
 
-            osg::ref_ptr<osgUtil::PolytopeIntersector> picker = new osgUtil::PolytopeIntersector(osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);
-            osgUtil::IntersectionVisitor iv(picker);
             view->getCamera()->accept(iv);
 
             if (picker->containsIntersections())
             {
-                auto iter = picker->getIntersections().begin();
-                if (iter != picker->getIntersections().end())
+                auto intersection = picker->getFirstIntersection();
+                osg::Vec3d curPoint = intersection.getWorldIntersectPoint(); //xyz
+                osg::Vec3d firstPoint = std::get<1>(selected_points.back()); //enu
+                curPoint = PositionTransformer::getInstance()->convertXYZ2ENU(curPoint); //enu
+
+                osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
+                vertices->push_back(firstPoint);
+                vertices->push_back(curPoint);
+
+//                std::cout << "firstPoint" << firstPoint.x() << " " << firstPoint.y() << " " << firstPoint.z() << std::endl;
+//                std::cout << "curPoint" << curPoint.x() << " " << curPoint.y() << " " << curPoint.z() << std::endl;
+
+                if (nullptr == temp_line_geode_)
                 {
-                    osg::Vec3 curPoint(iter->localIntersectionPoint);
-
-                    osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
-                    vertices->push_back(std::get<1>(selected_points.back()));
-                    vertices->push_back(curPoint);
-
-                    if (nullptr == temp_line_geode_)
-                    {
-                        temp_line_geode_ = new osg::Geode;
-                        temp_line_geode_->setName("tmpLineGeode");
-                        temp_node_->addChild(temp_line_geode_);
-                    }
-                    else
-                    {
-                        temp_line_geode_->removeDrawables(0, temp_line_geode_->getNumDrawables());
-                    }
-
-                    osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
-                    geom->setName("tmpLineGeom");
-                    temp_line_geode_->addDrawable(geom);
-
-                    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_LOOP, 0, vertices->size()));
-
-                    osg::ref_ptr<osg::Vec3Array> colors = new osg::Vec3Array;
-                    colors->push_back(osg::Vec3(1.0, 0.0, 0.0));
-
-                    geom->setColorArray(colors.release());
-                    geom->setColorBinding(osg::Geometry::BIND_OVERALL);
-                    geom->setVertexArray(vertices.get());
+                    temp_line_geode_ = new osg::Geode;
+                    temp_line_geode_->setName("tmpLineGeode");
+                    //temp_node_->addChild(temp_line_geode_);
                 }
-            } //end draw
+                else
+                {
+                    temp_line_geode_->removeDrawables(0, temp_line_geode_->getNumDrawables());
+                }
 
-            return false;
+                osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
+                geom->setName("tmpLineGeom");
+                temp_line_geode_->addDrawable(geom);
+
+                geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, vertices->size()));
+
+                osg::ref_ptr<osg::Vec3Array> colors = new osg::Vec3Array;
+                colors->push_back(osg::Vec3(1.0, 0.0, 0.0));
+
+                geom->setColorArray(colors.get());
+                geom->setColorBinding(osg::Geometry::BIND_OVERALL);
+                geom->setVertexArray(vertices.get());
+
+                return true;
+            } //end draw
+            else {
+                std::cout << "!!!" << std::endl;
+            }
         }
         case(osgGA::GUIEventAdapter::RELEASE):
         {
@@ -118,10 +125,11 @@ bool TraceEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
             }
             return true;
         }
-
         default:
             return false;
     }
+
+    return false;
 }
 
 void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
@@ -132,17 +140,17 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
     }
 
     if (ea.getButton() == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
-        double w = 2.5f;
-        double h = 2.5f;
 
-        osg::ref_ptr<osgUtil::PolytopeIntersector> picker = new osgUtil::PolytopeIntersector(
-                osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);
-        osgUtil::IntersectionVisitor iv(picker);
+        std::cout << "left clicked!" << ea.getXnormalized() << " " << ea.getYnormalized() << std::endl;
+        osg::ref_ptr<osgUtil::LineSegmentIntersector> picker = new osgUtil::LineSegmentIntersector
+                (osgUtil::Intersector::PROJECTION, ea.getXnormalized(), ea.getYnormalized());
+        osgUtil::IntersectionVisitor iv(picker.get());
+
         view->getCamera()->accept(iv);
 
         //intersection check
         if (picker->containsIntersections()) {
-
+            std::cout << "pick containsIntersections!" << std::endl;
             osg::Vec3d local_point;
             int local_point_index = 0;
 
@@ -151,7 +159,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
             for (const auto& intersection : all_intersection) {
                 auto child_node = intersection.nodePath.back();
                 if (child_node->getName() == "node") {
-//                    std::cout << "connect!" << std::endl;
+                    std::cout << "connect!" << std::endl;
                     is_connected = true;
                     child_node->getUserValue("pos", local_point);
                     child_node->getUserValue("id", local_point_index);
@@ -159,7 +167,11 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 }
             }
             if (!is_connected) {
-                local_point = picker->getIntersections().begin()->localIntersectionPoint;
+                osg::Vec3d intersectPoint = picker->getIntersections().begin()->getWorldIntersectPoint();
+                intersectPoint.z() += 0.5;
+                local_point = PositionTransformer::getInstance()->convertXYZ2ENU(intersectPoint);
+
+//                local_point = picker->getIntersections().begin()->localIntersectionPoint;
                 local_point_index = cur_point_index++;
 
                 osg::ref_ptr<osg::Geode> node_geode = new osg::Geode;
@@ -167,14 +179,22 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 node_geode->setUserValue("pos", local_point);
                 node_geode->setUserValue("id", local_point_index);
 
-                osg::ref_ptr<osg::ShapeDrawable> node_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.1f));
+                osg::ref_ptr<osg::ShapeDrawable> node_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 1.0f));
+                //osg::ref_ptr<osg::ShapeDrawable> node_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.1f));
                 node_sphere->setColor(osg::Vec4f(1.0, 1.0, 0.0, 1.0));
                 node_geode->addDrawable(node_sphere);
                 temp_node_->addChild(node_geode);
+
+                std::cout << "intersectPoint: " << intersectPoint.x() << " "
+                          << intersectPoint.y() << " " << intersectPoint.z() << std::endl;
             }
 
-            std::cout << "local point: " << local_point_index << std::endl;
+            std::cout << "local point: " << local_point_index << " " << local_point.x() << " "
+                << local_point.y() << " " << local_point.z() << std::endl;
+
             selected_points.emplace_back(std::make_pair(local_point_index, local_point));
+        } else {
+            std::cout << "???" << std::endl;
         }
 
         //draw temp line
@@ -201,7 +221,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
             geode->setName("solidLineGeode");
             geode->addDrawable(geom);
 
-            temp_node_->addChild(geode);
+            //temp_node_->addChild(geode);
         } // end draw
     } //left button
 

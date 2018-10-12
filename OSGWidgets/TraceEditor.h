@@ -19,7 +19,8 @@ namespace m_map {
     class Node;
 }
 
-class TraceEditor : public osgGA::GUIEventHandler
+class
+TraceEditor : public osgGA::GUIEventHandler
 {
     typedef std::vector<std::pair<size_t, osg::Vec3d>> point_pair_vec;
 

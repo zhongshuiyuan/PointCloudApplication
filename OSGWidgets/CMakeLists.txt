@@ -11,7 +11,7 @@ find_package(Qt5Core CONFIG REQUIRED)
 find_package(Qt5Gui CONFIG REQUIRED)
 find_package(Qt5OpenGL REQUIRED)
 set(OSGWidgets_SRCS
-        OSGWidget.cpp OSGWidget.h NodeTreeInfo.h LineEditor.cpp LineEditor.h NodeNames.h NodeTreeSearch.h TraceEditor.cpp TraceEditor.h TextController.h SelectEditor.cpp SelectEditor.h VMapDrawable.cpp VMapDrawable.h ENUCoorConv.hpp BezierCurve.h)
+        OSGWidget.cpp OSGWidget.h NodeTreeInfo.h LineEditor.cpp LineEditor.h NodeNames.h NodeTreeSearch.h TraceEditor.cpp TraceEditor.h TextController.h SelectEditor.cpp SelectEditor.h VMapDrawable.cpp VMapDrawable.h ENUCoorConv.hpp BezierCurve.h PositionTransformer.cpp PositionTransformer.h)
 add_library(OSGWidgets SHARED ${OSGWidgets_SRCS})
 target_link_libraries(OSGWidgets Qt5::Widgets Qt5::Core)
 
@@ -20,16 +20,22 @@ include_directories(../Common)
 #link_directories(../cmake-build-release/Common)
 target_link_libraries(OSGWidgets Common)
 
+#osgearth
+set(OSGEarth_LIBRARIES "libosgEarth.so;libosgEarthAnnotation.so;libosgEarthFeatures.so;libosgEarthQt.so;libosgEarthSymbology.so;libosgEarthUtil.so")
+
 #osg & pcl & eigen
 include_directories(
         ${OPENSCENEGRAPH_INCLUDE_DIRS}
+        ${OSGEARTH_INCLUDE_DIRS}
         ${PCL_INCLUDE_DIRS}
         ${EIGEN3_INCLUDE_DIR}
 )
+
 find_package(OpenSceneGraph 3.2 REQUIRED COMPONENTS osgGA osgViewer osgDB osgUtil osg osgQt osgFX)
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 target_link_libraries(OSGWidgets
         ${OPENSCENEGRAPH_LIBRARIES}
+        ${OSGEarth_LIBRARIES}
         ${PCL_LIBRARIES}
         )

@@ -6,8 +6,12 @@
 #ifndef POINTCLOUDAPPLICATION_COMMON_H
 #define POINTCLOUDAPPLICATION_COMMON_H
 
+#include <osg/Vec3d>
+
+const osg::Vec3d ground_center_location = osg::Vec3d(23.0304, 113.783, 0.0);
 
 const char root_node_name[] = "root_node";
+const char earth_node_name[] = "earth_node";
 const char vmap_node_name[] = "vmap_node";
 const char text_node_name[] = "text_node";
 const char temp_node_name[] = "temp_node";

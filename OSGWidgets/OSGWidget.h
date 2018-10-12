@@ -30,6 +30,10 @@
 #include <pcl/point_cloud.h>
 #include <pcl/console/time.h>
 
+namespace osgEarth {
+    class MapNode;
+}
+
 class LineEditor;
 class TraceEditor;
 class SelectEditor;
@@ -80,6 +84,7 @@ private:
 
     osg::ref_ptr<osgViewer::View>  main_view_;
     osg::ref_ptr<osg::Switch>      root_node_;
+    osg::ref_ptr<osgEarth::MapNode> map_node_;
 
     osg::ref_ptr<LineEditor>     line_editor_;
     osg::ref_ptr<TraceEditor>   trace_editor_;

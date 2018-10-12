@@ -80,7 +80,6 @@ void MainWindow::createMenu() {
 
     select_item_action = new QAction("Select", this);
     select_item_action->setIcon(QIcon("../../resources/search.png"));
-    select_item_action->setShortcut(QKeySequence("s"));
     select_item_action->setCheckable(true);
     connect(select_item_action, SIGNAL(toggled(bool)), this, SLOT(selectItem(bool)));
 

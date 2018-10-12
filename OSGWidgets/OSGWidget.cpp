@@ -14,16 +14,22 @@
 #include <QtCore/QFileInfoList>
 #include <QtCore/QTextStream>
 
-#include <osg/ValueObject>
-#include <osg/Geometry>
-#include <osg/Material>
 #include <osg/Light>
 #include <osg/Point>
+#include <osg/Material>
+#include <osg/Geometry>
+#include <osg/ValueObject>
 #include <osg/ShapeDrawable>
+#include <osg/PositionAttitudeTransform>
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 #include <osgGA/StateSetManipulator>
 #include <osgViewer/ViewerEventHandlers>
+
+#include <osgEarth/MapNode>
+#include <osgEarthUtil/EarthManipulator>
+#include <osgEarthUtil/ObjectLocator>
+#include <osgEarthUtil/Sky>
 
 #include "NodeNames.h"
 #include "OSGWidget.h"
@@ -33,7 +39,7 @@
 #include "NodeTreeInfo.h"
 #include "VMapDrawable.h"
 #include "TextController.h"
-#include "ENUCoorConv.hpp"
+#include "PositionTransformer.h"
 #include "../Common/tracer.h"
 #include "../Common/VectorMapSingleton.h"
 
@@ -73,13 +79,33 @@ void OSGWidget::initSceneGraph() {
     root_node_ = new osg::Switch;
     root_node_->setName(root_node_name);
 
+    //earth
+    {
+        osg::ref_ptr<osg::PositionAttitudeTransform> earth_node = new osg::PositionAttitudeTransform;
+        earth_node->setName(earth_node_name);
+
+        std::string earth_file = "../../resources/gisms.earth";
+        osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(earth_file);
+        map_node_ = osgEarth::MapNode::findMapNode(node.get());
+        map_node_->setName("earth");
+
+        PositionTransformer::getInstance()->setMapNode(map_node_);
+        root_node_->addChild(earth_node);
+    }
+
+    //locator
+    osg::ref_ptr<osgEarth::Util::ObjectLocatorNode> locator = new osgEarth::Util::ObjectLocatorNode(map_node_->getMap());
+    locator->setName("locator");
+    locator->getLocator()->setPosition(osg::Vec3d(ground_center_location.y(), ground_center_location.x(), ground_center_location.z()));
+    root_node_->addChild(locator);
+
     osg::ref_ptr<osg::Switch> point_cloud_node = new osg::Switch;
     point_cloud_node->setName(point_cloud_node_name);
-    root_node_->addChild(point_cloud_node);
+    locator->addChild(point_cloud_node);
 
     osg::ref_ptr<osg::Switch> vmap_node = new osg::Switch;
     vmap_node->setName(vmap_node_name);
-    root_node_->addChild(vmap_node);
+    locator->addChild(vmap_node);
     {
         osg::ref_ptr<osg::Switch> vector_item_node = new osg::Switch;
         vector_item_node->setName(vector_item_node_name);
@@ -92,7 +118,7 @@ void OSGWidget::initSceneGraph() {
 
     osg::ref_ptr<osg::Switch> text_node = new osg::Switch;
     text_node->setName(text_node_name);
-    root_node_->addChild(text_node);
+    locator->addChild(text_node);
     {
         osg::ref_ptr<osg::Switch> point_text_node = new osg::Switch;
         point_text_node->setName(point_text_node_name);
@@ -121,7 +147,7 @@ void OSGWidget::initSceneGraph() {
 
     osg::ref_ptr<osg::Switch> temp_node = new osg::Switch;
     temp_node->setName(temp_node_name);
-    root_node_->addChild(temp_node);
+    locator->addChild(temp_node);
 
     {
         //离散对象节点光照
@@ -173,6 +199,22 @@ void OSGWidget::initCamera() {
         camera->setClearStencil(0);
     }
 
+    //sky
+    {
+        osg::ref_ptr<osgEarth::Util::SkyNode> sky_node = osgEarth::Util::SkyNode::create(map_node_.get());
+        sky_node->setName("Sky");
+        sky_node->setDateTime(osgEarth::DateTime(2018, 10, 11, 6));
+        osg::ref_ptr<osgEarth::Util::Ephemeris> ephemeris = new osgEarth::Util::Ephemeris;
+        sky_node->setEphemeris(ephemeris.get());
+        sky_node->attach(main_view_, 0);
+        sky_node->setLighting(true);
+        sky_node->getSunLight()->setAmbient(osg::Vec4(0.2, 0.2, 0.2, 0.0));
+        sky_node->addChild(map_node_.get());
+
+        auto earth_node = NodeTreeSearch::findNodeWithName(root_node_, earth_node_name)->asTransform();
+        earth_node->addChild(sky_node);
+    }
+
     main_view_->addEventHandler(new osgViewer::StatsHandler);
     main_view_->addEventHandler(new osgGA::StateSetManipulator(camera->getStateSet()));
 
@@ -183,7 +225,13 @@ void OSGWidget::initCamera() {
     main_view_->addEventHandler(textController);
 
     main_view_->setSceneData(root_node_.get());
-    main_view_->setCameraManipulator(new osgGA::TrackballManipulator);
+
+    osg::ref_ptr<osgEarth::Util::EarthManipulator> em = new osgEarth::Util::EarthManipulator;
+    em->setHomeViewpoint(osgEarth::Viewpoint(ground_center_location.y(), ground_center_location.x(),
+                                             ground_center_location.z(), 0, -90, 1000));
+
+    main_view_->setCameraManipulator(em);
+    //main_view_->setCameraManipulator(new osgGA::TrackballManipulator);
 
     QWidget *widget = graphic_window->getGLWidget();
     auto grid = new QGridLayout;

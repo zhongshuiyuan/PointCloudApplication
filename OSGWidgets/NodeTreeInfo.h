@@ -13,9 +13,9 @@
 #include <osg/Geode>
 #include <osg/Node>
 #include <osg/Camera>
+#include <osg/PositionAttitudeTransform>
 #include <osgGA/GUIEventHandler>
 #include <osgViewer/Viewer>
-
 
 class NodeTreeInfo : public osg::NodeVisitor
 {
@@ -64,6 +64,12 @@ public:
         indent_++;
         traverse(node);
         indent_--;
+    }
+
+    void apply(osg::PositionAttitudeTransform& node) override
+    {
+        for (int i = 0; i < indent_; i++) std::cout << "  ";
+        std::cout << "[" << indent_ + 1 << "]" << node.libraryName() << "::" << node.className() << "::" << node.getName() << std::endl;
     }
 
 protected:
