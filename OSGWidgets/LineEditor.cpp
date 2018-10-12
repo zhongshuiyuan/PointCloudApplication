@@ -15,6 +15,7 @@
 #include "LineEditor.h"
 #include "VMapDrawable.h"
 #include "NodeTreeSearch.h"
+#include "PositionTransformer.h"
 #include "../Common/tracer.h"
 #include "../Common/VectorMapSingleton.h"
 #include "DataStructure.h"
@@ -60,11 +61,9 @@ bool LineEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapte
             if (selected_points.empty()) return false;
 
             //draw mouse follow line
-            double w = 1.5f;
-            double h = 1.5f;
-
-            osg::ref_ptr<osgUtil::PolytopeIntersector> picker = new osgUtil::PolytopeIntersector(osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);
-            osgUtil::IntersectionVisitor iv(picker);
+            osg::ref_ptr<osgUtil::LineSegmentIntersector> picker = new osgUtil::LineSegmentIntersector
+                    (osgUtil::Intersector::PROJECTION, ea.getXnormalized(), ea.getYnormalized());
+            osgUtil::IntersectionVisitor iv(picker.get());
             view->getCamera()->accept(iv);
 
             if (picker->containsIntersections())
@@ -72,10 +71,11 @@ bool LineEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapte
                 auto iter = picker->getIntersections().begin();
                 if (iter != picker->getIntersections().end())
                 {
-                    osg::Vec3 curPoint(iter->localIntersectionPoint);
+                    osg::Vec3 curPoint(iter->getWorldIntersectPoint()); //xyz
+                    curPoint = PositionTransformer::getInstance()->convertXYZ2ENU(curPoint); //enu
 
                     osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
-                    vertices->push_back(std::get<1>(selected_points.back()));
+                    vertices->push_back(std::get<1>(selected_points.back())); //enu
                     vertices->push_back(curPoint);
 
                     if (nullptr == temp_line_geode_)
@@ -129,12 +129,10 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
     }
 
     if (ea.getButton() == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
-        double w = 1.5f;
-        double h = 1.5f;
 
-        osg::ref_ptr<osgUtil::PolytopeIntersector> picker = new osgUtil::PolytopeIntersector(
-                osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);
-        osgUtil::IntersectionVisitor iv(picker);
+        osg::ref_ptr<osgUtil::LineSegmentIntersector> picker = new osgUtil::LineSegmentIntersector
+                (osgUtil::Intersector::PROJECTION, ea.getXnormalized(), ea.getYnormalized());
+        osgUtil::IntersectionVisitor iv(picker.get());
         view->getCamera()->accept(iv);
 
         //intersection check
@@ -155,7 +153,9 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
                 }
             }
             if (!is_connected) {
-                local_point = picker->getIntersections().begin()->localIntersectionPoint;
+                auto intersection = picker->getFirstIntersection();
+                osg::Vec3d cur_point = intersection.getWorldIntersectPoint(); //xyz
+                local_point = PositionTransformer::getInstance()->convertXYZ2ENU(cur_point); //enu
                 local_point_index = cur_point_index++;
 
                 osg::ref_ptr<osg::Geode> node_geode = new osg::Geode;
@@ -169,7 +169,8 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
                 temp_node_->addChild(node_geode);
             }
 
-            std::cout << "local point: " << local_point_index << std::endl;
+            std::cout << "local point: " << local_point_index << " " << local_point.x() << " "
+                << local_point.y() << " " << local_point.z() << std::endl;
             selected_points.emplace_back(std::make_pair(local_point_index, local_point));
         }
 
@@ -205,11 +206,7 @@ void LineEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
     if (ea.getButton() == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON && selected_points.size() >= 2)
     {
         //hermite curve
-        {
-
-
-
-        }
+        {}
 
         //update point
         std::vector<Point> points;

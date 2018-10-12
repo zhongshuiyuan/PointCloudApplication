@@ -104,6 +104,8 @@ public:
         }
 
         //text
+        bool draw_text = false;
+        if (draw_text)
         {
             osg::ref_ptr<osg::Switch> point_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, point_text_node_name));
             for (const auto& point: points) {
@@ -224,6 +226,8 @@ public:
         }
 
         //text
+        bool draw_text = false;
+        if(draw_text)
         {
             osg::ref_ptr<osg::Switch> node_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, node_text_node_name));
             for (const auto& node: nodes) {
@@ -233,6 +237,12 @@ public:
                 osg::Vec3d pos(point.ly, point.bx, point.h);
                 std::string name = std::to_string(node.nid);
                 osg::Vec4f color(0.0, 1.0, 0.0, 0.5);
+
+                static bool tmp = true;
+                if(tmp) {
+                    std::cout << "node name:" << name << std::endl;
+                    tmp = false;
+                }
 
                 node_text_node->addChild(drawTextGeode(pos, name, color, 0.2));
             }
@@ -251,6 +261,12 @@ public:
                 osg::Vec3d pos = ( pos1 + pos2 ) / 2;
                 std::string name = std::to_string(lane.lnid);
                 osg::Vec4f color(1.0, 0.0, 0.0, 0.5);
+
+                static bool tmp2 = true;
+                if(tmp2) {
+                    std::cout << "lane name:" << name << std::endl;
+                    tmp2 = false;
+                }
 
                 lane_text_node->addChild(drawTextGeode(pos, name, color, 0.2));
             }

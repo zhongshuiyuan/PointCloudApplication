@@ -66,14 +66,17 @@ void SelectEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view)
         double w = 1.5f;
         double h = 1.5f;
 
-        osg::ref_ptr<osgUtil::PolytopeIntersector> picker = new osgUtil::PolytopeIntersector(
-                osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);
-        osgUtil::IntersectionVisitor iv(picker);
+//        osg::ref_ptr<osgUtil::PolytopeIntersector> picker = new osgUtil::PolytopeIntersector(
+//                osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);
+//        osgUtil::IntersectionVisitor iv(picker);
+        osg::ref_ptr<osgUtil::LineSegmentIntersector> picker = new osgUtil::LineSegmentIntersector
+                (osgUtil::Intersector::PROJECTION, ea.getXnormalized(), ea.getYnormalized());
+        osgUtil::IntersectionVisitor iv(picker.get());
 
         //only intersect with vmap_node;
-        root_node_->setSingleChildOn(root_node_->getChildIndex(vmap_node_));
+        //root_node_->setSingleChildOn(root_node_->getChildIndex(vmap_node_));
         view->getCamera()->accept(iv);
-        root_node_->setAllChildrenOn();
+        //root_node_->setAllChildrenOn();
 
         //intersection check
         cleanUp();

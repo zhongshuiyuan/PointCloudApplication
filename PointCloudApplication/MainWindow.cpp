@@ -51,6 +51,7 @@ void MainWindow::initUI() {
     osgwidget_ = new OSGWidget(this);
     this->setCentralWidget(osgwidget_);
     osgwidget_->init();
+    osgwidget_->loadVectorMap();
     createConnect();
 }
 

@@ -80,25 +80,31 @@ void OSGWidget::initSceneGraph() {
     root_node_->setName(root_node_name);
 
     //earth
-    {
-        osg::ref_ptr<osg::PositionAttitudeTransform> earth_node = new osg::PositionAttitudeTransform;
-        earth_node->setName(earth_node_name);
+    std::string earth_file = "../../resources/gisms.earth";
+    osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(earth_file);
+    map_node_ = osgEarth::MapNode::findMapNode(node.get());
+    map_node_->setName(earth_node_name);
+    PositionTransformer::getInstance()->setMapNode(map_node_);
 
-        std::string earth_file = "../../resources/gisms.earth";
-        osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(earth_file);
-        map_node_ = osgEarth::MapNode::findMapNode(node.get());
-        map_node_->setName("earth");
-
-        PositionTransformer::getInstance()->setMapNode(map_node_);
-        root_node_->addChild(earth_node);
-    }
+    //sky----the only entrance of the whole scene node tree!
+    osg::ref_ptr<osgEarth::Util::SkyNode> sky_node = osgEarth::Util::SkyNode::create(map_node_.get());
+    sky_node->setName("Sky");
+    sky_node->setDateTime(osgEarth::DateTime(2018, 10, 11, 6));
+    osg::ref_ptr<osgEarth::Util::Ephemeris> ephemeris = new osgEarth::Util::Ephemeris;
+    sky_node->setEphemeris(ephemeris.get());
+    sky_node->attach(main_view_, 0);
+    sky_node->setLighting(true);
+    sky_node->getSunLight()->setAmbient(osg::Vec4(0.2, 0.2, 0.2, 0.0));
+    sky_node->addChild(map_node_.get());
+    root_node_->addChild(sky_node);
 
     //locator
     osg::ref_ptr<osgEarth::Util::ObjectLocatorNode> locator = new osgEarth::Util::ObjectLocatorNode(map_node_->getMap());
     locator->setName("locator");
-    locator->getLocator()->setPosition(osg::Vec3d(ground_center_location.y(), ground_center_location.x(), ground_center_location.z()));
-    root_node_->addChild(locator);
+    locator->getLocator()->setPosition(osg::Vec3d(ground_center_location.y(), ground_center_location.x(), ground_center_location.z() + 0.8));
+    sky_node->addChild(locator);
 
+    //others
     osg::ref_ptr<osg::Switch> point_cloud_node = new osg::Switch;
     point_cloud_node->setName(point_cloud_node_name);
     locator->addChild(point_cloud_node);
@@ -150,7 +156,7 @@ void OSGWidget::initSceneGraph() {
     locator->addChild(temp_node);
 
     {
-        //离散对象节点光照
+        //光照
         osg::ref_ptr<osg::Light> pclight = new osg::Light;
         pclight->setAmbient(osg::Vec4(.8f, .8f, .8f, .8f));
         osg::ref_ptr<osg::Point> pcps = new osg::Point(1.0f);
@@ -197,22 +203,6 @@ void OSGWidget::initCamera() {
         unsigned int clearMask = camera->getClearMask();
         camera->setClearMask(clearMask | GL_STENCIL_BUFFER_BIT);
         camera->setClearStencil(0);
-    }
-
-    //sky
-    {
-        osg::ref_ptr<osgEarth::Util::SkyNode> sky_node = osgEarth::Util::SkyNode::create(map_node_.get());
-        sky_node->setName("Sky");
-        sky_node->setDateTime(osgEarth::DateTime(2018, 10, 11, 6));
-        osg::ref_ptr<osgEarth::Util::Ephemeris> ephemeris = new osgEarth::Util::Ephemeris;
-        sky_node->setEphemeris(ephemeris.get());
-        sky_node->attach(main_view_, 0);
-        sky_node->setLighting(true);
-        sky_node->getSunLight()->setAmbient(osg::Vec4(0.2, 0.2, 0.2, 0.0));
-        sky_node->addChild(map_node_.get());
-
-        auto earth_node = NodeTreeSearch::findNodeWithName(root_node_, earth_node_name)->asTransform();
-        earth_node->addChild(sky_node);
     }
 
     main_view_->addEventHandler(new osgViewer::StatsHandler);

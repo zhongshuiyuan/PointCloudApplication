@@ -63,7 +63,6 @@ bool TraceEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
             _my = ea.getY();
 
             if (selected_points.empty()) return false;
-//            std::cout << "move" << selected_points.size() << std::endl;
 
             //draw mouse follow line
             osg::ref_ptr<osgUtil::LineSegmentIntersector> picker = new osgUtil::LineSegmentIntersector
@@ -83,14 +82,11 @@ bool TraceEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
                 vertices->push_back(firstPoint);
                 vertices->push_back(curPoint);
 
-//                std::cout << "firstPoint" << firstPoint.x() << " " << firstPoint.y() << " " << firstPoint.z() << std::endl;
-//                std::cout << "curPoint" << curPoint.x() << " " << curPoint.y() << " " << curPoint.z() << std::endl;
-
                 if (nullptr == temp_line_geode_)
                 {
                     temp_line_geode_ = new osg::Geode;
                     temp_line_geode_->setName("tmpLineGeode");
-                    //temp_node_->addChild(temp_line_geode_);
+                    temp_node_->addChild(temp_line_geode_);
                 }
                 else
                 {
@@ -109,12 +105,9 @@ bool TraceEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
                 geom->setColorArray(colors.get());
                 geom->setColorBinding(osg::Geometry::BIND_OVERALL);
                 geom->setVertexArray(vertices.get());
-
-                return true;
             } //end draw
-            else {
-                std::cout << "!!!" << std::endl;
-            }
+
+            break;
         }
         case(osgGA::GUIEventAdapter::RELEASE):
         {
@@ -122,11 +115,12 @@ bool TraceEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
             {
                 // only do a pick if the mouse hasn't moved
                 pick(ea,view);
+                return true;
             }
-            return true;
+            break;
         }
         default:
-            return false;
+            break;
     }
 
     return false;
@@ -140,8 +134,6 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
     }
 
     if (ea.getButton() == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
-
-        std::cout << "left clicked!" << ea.getXnormalized() << " " << ea.getYnormalized() << std::endl;
         osg::ref_ptr<osgUtil::LineSegmentIntersector> picker = new osgUtil::LineSegmentIntersector
                 (osgUtil::Intersector::PROJECTION, ea.getXnormalized(), ea.getYnormalized());
         osgUtil::IntersectionVisitor iv(picker.get());
@@ -150,7 +142,6 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
 
         //intersection check
         if (picker->containsIntersections()) {
-            std::cout << "pick containsIntersections!" << std::endl;
             osg::Vec3d local_point;
             int local_point_index = 0;
 
@@ -159,7 +150,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
             for (const auto& intersection : all_intersection) {
                 auto child_node = intersection.nodePath.back();
                 if (child_node->getName() == "node") {
-                    std::cout << "connect!" << std::endl;
+//                    std::cout << "connect!" << std::endl;
                     is_connected = true;
                     child_node->getUserValue("pos", local_point);
                     child_node->getUserValue("id", local_point_index);
@@ -168,10 +159,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
             }
             if (!is_connected) {
                 osg::Vec3d intersectPoint = picker->getIntersections().begin()->getWorldIntersectPoint();
-                intersectPoint.z() += 0.5;
                 local_point = PositionTransformer::getInstance()->convertXYZ2ENU(intersectPoint);
-
-//                local_point = picker->getIntersections().begin()->localIntersectionPoint;
                 local_point_index = cur_point_index++;
 
                 osg::ref_ptr<osg::Geode> node_geode = new osg::Geode;
@@ -179,22 +167,15 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 node_geode->setUserValue("pos", local_point);
                 node_geode->setUserValue("id", local_point_index);
 
-                osg::ref_ptr<osg::ShapeDrawable> node_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 1.0f));
-                //osg::ref_ptr<osg::ShapeDrawable> node_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.1f));
+                osg::ref_ptr<osg::ShapeDrawable> node_sphere = new osg::ShapeDrawable(new osg::Sphere(local_point, 0.1f));
                 node_sphere->setColor(osg::Vec4f(1.0, 1.0, 0.0, 1.0));
                 node_geode->addDrawable(node_sphere);
                 temp_node_->addChild(node_geode);
 
-                std::cout << "intersectPoint: " << intersectPoint.x() << " "
-                          << intersectPoint.y() << " " << intersectPoint.z() << std::endl;
             }
-
             std::cout << "local point: " << local_point_index << " " << local_point.x() << " "
                 << local_point.y() << " " << local_point.z() << std::endl;
-
             selected_points.emplace_back(std::make_pair(local_point_index, local_point));
-        } else {
-            std::cout << "???" << std::endl;
         }
 
         //draw temp line
@@ -221,7 +202,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
             geode->setName("solidLineGeode");
             geode->addDrawable(geom);
 
-            //temp_node_->addChild(geode);
+            temp_node_->addChild(geode);
         } // end draw
     } //left button
 
@@ -433,7 +414,7 @@ std::vector<osg::Vec3d> TraceEditor::calculateInterpolationPoints(const osg::Vec
     std::vector<osg::Vec3d> points;
 
     osg::Vec3d direction = end_point - start_point;
-    direction.z() = 0;
+    //direction.z() = 0;
     double distance = direction.length();
     direction.normalize();
 
