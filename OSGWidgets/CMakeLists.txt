@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(OSGWidgets)
+add_subdirectory(bezier_curve)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -11,14 +12,27 @@ find_package(Qt5Core CONFIG REQUIRED)
 find_package(Qt5Gui CONFIG REQUIRED)
 find_package(Qt5OpenGL REQUIRED)
 set(OSGWidgets_SRCS
-        OSGWidget.cpp OSGWidget.h NodeTreeInfo.h LineEditor.cpp LineEditor.h NodeNames.h NodeTreeSearch.h TraceEditor.cpp TraceEditor.h TextController.h SelectEditor.cpp SelectEditor.h VMapDrawable.cpp VMapDrawable.h ENUCoorConv.hpp BezierCurve.h PositionTransformer.cpp PositionTransformer.h)
+        BezierCurve.cpp
+        OSGWidget.cpp
+        LineEditor.cpp
+        TraceEditor.cpp
+        SelectEditor.cpp
+        VMapDrawable.cpp
+        PositionTransformer.cpp
+        )
 add_library(OSGWidgets SHARED ${OSGWidgets_SRCS})
 target_link_libraries(OSGWidgets Qt5::Widgets Qt5::Core)
 
 #other module
-include_directories(../Common)
+include_directories(../Common
+        ./bezier_curve
+        )
 #link_directories(../cmake-build-release/Common)
-target_link_libraries(OSGWidgets Common)
+target_link_libraries(OSGWidgets
+        Common
+        Bezier
+        )
+
 
 #osgearth
 set(OSGEarth_LIBRARIES "libosgEarth.so;libosgEarthAnnotation.so;libosgEarthFeatures.so;libosgEarthQt.so;libosgEarthSymbology.so;libosgEarthUtil.so")

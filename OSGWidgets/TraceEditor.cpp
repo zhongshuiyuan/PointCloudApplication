@@ -15,6 +15,7 @@
 #include <osgText/Text>
 
 #include "NodeNames.h"
+#include "BezierCurve.h"
 #include "TraceEditor.h"
 #include "VMapDrawable.h"
 #include "DataStructure.h"
@@ -209,7 +210,31 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
     //right button
     if (ea.getButton() == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON && selected_points.size() >= 2)
     {
-        //interpolation
+        //bezier interpolation
+        if(false)
+        {
+            int interval = 10;
+            std::vector<osg::Vec3d> points;
+            for (const auto& selected_point : selected_points) {
+                points.push_back(std::get<1>(selected_point));
+            }
+
+            auto bezier_points = Util::BezierCurveFactory::make(points, interval);
+
+            point_pair_vec dense_selected_points;
+            for (int i = 0; i < selected_points.size() - 1; ++i) {
+                dense_selected_points.push_back(selected_points[i]);
+                for (int j = 1; j < interval - 1; ++j) {
+                    osg::Vec3d point = bezier_points[i * interval + j];
+                    dense_selected_points.emplace_back(std::make_pair(cur_point_index++, point));
+                }
+            }
+            dense_selected_points.push_back(selected_points.back());
+            dense_selected_points.swap(selected_points);
+        }
+
+        //equally spaced interpolation
+        if(true)
         {
             point_pair_vec tmp_selected_points;
             for (int i = 0; i < selected_points.size() - 1; ++i) {
@@ -226,12 +251,11 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                 tmp_selected_points.insert(tmp_selected_points.end(), dense_selected_points.begin(), dense_selected_points.end());
             }
             tmp_selected_points.push_back(selected_points.back());
-
             tmp_selected_points.swap(selected_points);
         }
 
         //successively output
-        if (0)
+        if (false)
         {
             std::ofstream ofs("test.txt", std::ios::app);
 
