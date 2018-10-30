@@ -101,6 +101,13 @@ public:
     std::vector<CrossWalk> findByFilter(const Filter<CrossWalk>& filter) const;
     std::vector<StopLine>  findByFilter(const Filter<StopLine>& filter) const;
 
+    void remove(const Key<Line>& key);
+    void remove(const Key<RoadEdge>& key);
+    void remove(const Key<StopLine>& key);
+    void remove(const Key<CrossWalk>& key);
+    void remove(const Key<Lane>& key);
+    void remove(const Key<dtLane>& key);
+
     void saveToDir(const std::string& dir_path) const;
 
 private:

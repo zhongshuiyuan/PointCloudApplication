@@ -278,11 +278,7 @@ public:
 
     template <class T>
     void setNodeValue(const T& object, osg::Node* node) {
-        if (std::is_same<T, RoadEdge>::value) setRoadEdgeNodeValue(reinterpret_cast<const RoadEdge&>(object), node);
-        else if (std::is_same<T, StopLine>::value) setStopLineNodeValue(reinterpret_cast<const StopLine&>(object), node);
-        else if (std::is_same<T, Lane>::value) setLaneNodeValue(reinterpret_cast<const Lane&>(object), node);
-        else if (std::is_same<T, CrossWalk>::value) setCrossWalkNodeValue(reinterpret_cast<const CrossWalk&>(object), node);
-        else setNullNodeValue(node);
+       setValue(object, node);
     }
 
     static QStringList getNodeValue(osg::Node* node);
@@ -291,11 +287,11 @@ private:
     osg::ref_ptr<osg::Geode> drawTextGeode(const osg::Vec3d& pos, const std::string& content,
             const osg::Vec4f& color, float size = 0.5);
 
-    void setNullNodeValue(osg::Node* node);
-    void setRoadEdgeNodeValue(const m_map::RoadEdge& object, osg::Node* node);
-    void setStopLineNodeValue(const m_map::StopLine& object, osg::Node* node);
-    void setCrossWalkNodeValue(const m_map::CrossWalk& object, osg::Node* node);
-    void setLaneNodeValue(const m_map::Lane& object, osg::Node* node);
+    void setValue(const m_map::RoadEdge& object, osg::Node* node);
+    void setValue(const m_map::StopLine& object, osg::Node* node);
+    void setValue(const m_map::CrossWalk& object, osg::Node* node);
+    void setValue(const m_map::Lane& object, osg::Node* node);
+    void setValue(const m_map::Line& object, osg::Node* node);
 
     osg::ref_ptr<osg::Switch> root_node_;
 };

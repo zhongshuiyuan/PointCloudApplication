@@ -19,6 +19,12 @@
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIActionAdapter>
 
+namespace m_map {
+    class CrossWalk;
+    class RoadEdge;
+    class StopLine;
+    class Lane;
+}
 
 class SelectEditor : public QObject, public osgGA::GUIEventHandler {
     Q_OBJECT
@@ -34,8 +40,23 @@ private:
     std::vector<T> generate(size_t start_id, size_t end_id, size_t index, const std::vector<U>& lanes) const;
     template <class T, class U>
     size_t calculateLinkID(const T& obj, const std::vector<U>& lanes) const;
+
     template <class T>
     size_t getObjectId(const T& obj) const;
+    size_t getId(const m_map::CrossWalk& obj) const;
+    size_t getId(const m_map::RoadEdge& obj) const;
+    size_t getId(const m_map::StopLine& obj) const;
+
+    void setItemValue(m_map::CrossWalk& obj, ...) const;
+    void setItemValue(m_map::StopLine& obj, ...) const;
+    void setItemValue(m_map::RoadEdge& obj, ...) const;
+    void setItemValue(m_map::Lane& obj, ...) const;
+
+    void deleteLane(int head_id, int tail_id);
+    void deleteLine(int head_id, int tail_id);
+    void deleteRoadEdge(int head_id, int tail_id);
+    void deleteStopLine(int head_id, int tail_id);
+    void deleteCrossWalk(int id);
 
     double distanceBewteen2DLineSegment(const osg::Vec3d& p1, const osg::Vec3d& p2,
             const osg::Vec3d& q1, const osg::Vec3d& q2) const;
@@ -53,6 +74,7 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     void receiveItemInfo(QStringList itemInfo);
+    void deleteTargetItem(QString itemType);
 };
 
 

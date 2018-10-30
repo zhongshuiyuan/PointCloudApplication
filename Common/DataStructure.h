@@ -235,16 +235,18 @@ public:
         //auto [it, inserted] = map_.insert_or_assign(key, t);
     }
 
-    T findByKey(const Key<T>& key) const
-    {
+    void remove(const Key<T>& key) {
+        map_.erase(key);
+    }
+
+    T findByKey(const Key<T>& key) const {
         auto it = map_.find(key);
         if (it == map_.end())
             return T();
         return it->second;
     }
 
-    std::vector<T> findByFilter(const Filter<T>& filter) const
-    {
+    std::vector<T> findByFilter(const Filter<T>& filter) const {
         std::vector<T> vector;
         for (const auto& pair : map_)
         {

@@ -18,7 +18,8 @@ osg::ref_ptr<osg::Geode> VMapDrawable::drawTextGeode(const osg::Vec3d& pos, cons
 
     osg::ref_ptr<osgText::Text> text = new osgText::Text;
     text->setCharacterSize(size);
-    text->setAxisAlignment( osgText::TextBase::XY_PLANE );
+    text->setAlignment(osgText::Text::CENTER_BOTTOM);
+    text->setAutoRotateToScreen(true);
     text->setPosition(pos);
     text->setText(content);
     text->setColor(color);
@@ -27,12 +28,12 @@ osg::ref_ptr<osg::Geode> VMapDrawable::drawTextGeode(const osg::Vec3d& pos, cons
     return geode.release();
 }
 
-void VMapDrawable::setRoadEdgeNodeValue(const RoadEdge &object, osg::Node* node) {
+void VMapDrawable::setValue(const m_map::RoadEdge& object, osg::Node* node) {
     std::string item_type = "RoadEdge";
     node->setUserValue("item_type", item_type);
 }
 
-void VMapDrawable::setStopLineNodeValue(const StopLine &object, osg::Node* node) {
+void VMapDrawable::setValue(const m_map::StopLine& object, osg::Node* node) {
     std::string item_type = "StopLine";
     int tlid = object.tlid;
     int signid = object.signid;
@@ -42,7 +43,7 @@ void VMapDrawable::setStopLineNodeValue(const StopLine &object, osg::Node* node)
     node->setUserValue("signid", signid);
 }
 
-void VMapDrawable::setCrossWalkNodeValue(const CrossWalk &object, osg::Node* node) {
+void VMapDrawable::setValue(const m_map::CrossWalk& object, osg::Node* node) {
     std::string item_type = "CrossWalk";
     int bdid = object.bdid;
     int type = object.type;
@@ -52,7 +53,7 @@ void VMapDrawable::setCrossWalkNodeValue(const CrossWalk &object, osg::Node* nod
     node->setUserValue("type", type);
 }
 
-void VMapDrawable::setLaneNodeValue(const m_map::Lane& object, osg::Node* node) {
+void VMapDrawable::setValue(const m_map::Lane& object, osg::Node* node) {
     std::string item_type = "Lane";
     int lcnt = object.lcnt;
     int lno = object.lno;
@@ -62,8 +63,9 @@ void VMapDrawable::setLaneNodeValue(const m_map::Lane& object, osg::Node* node) 
     node->setUserValue("lno", lno);
 }
 
-void VMapDrawable::setNullNodeValue(osg::Node* node){
+void VMapDrawable::setValue(const m_map::Line& object, osg::Node* node) {
     std::string item_type = "Uncertain";
+
     node->setUserValue("item_type", item_type);
 }
 

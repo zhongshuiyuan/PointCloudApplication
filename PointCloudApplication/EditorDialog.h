@@ -29,9 +29,11 @@ private:
 
 Q_SIGNALS:
     void postItemInfo(QStringList itemInfo);
+    void deleteItemInfo(QString itemType);
 
 public Q_SLOTS:
     void save();
+    void deleteItem();
     void buttonsToggled(int index, bool checked);
 };
 

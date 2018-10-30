@@ -226,5 +226,6 @@ void MainWindow::receiveItem(QStringList itemInfo) {
 
     auto edit_widget = new EditorDialog(itemInfo, this);
     connect(edit_widget, SIGNAL(postItemInfo(QStringList)), osgwidget_->select_editor_, SLOT(receiveItemInfo(QStringList)));
+    connect(edit_widget, SIGNAL(deleteItemInfo(QString)), osgwidget_->select_editor_, SLOT(deleteTargetItem(QString)));
     edit_widget->exec();
 }

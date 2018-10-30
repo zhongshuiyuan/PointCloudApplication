@@ -287,6 +287,30 @@ void VectorMapSingleton::saveToDir(const std::string& dir_path) const {
     }
 }
 
+void VectorMapSingleton::remove(const Key<Line> &key) {
+    lines_.remove(key);
+}
+
+void VectorMapSingleton::remove(const Key<RoadEdge> &key) {
+    roadedges_.remove(key);
+}
+
+void VectorMapSingleton::remove(const Key<StopLine>& key) {
+    stoplines_.remove(key);
+}
+
+void VectorMapSingleton::remove(const Key<CrossWalk>& key) {
+    crosswalks_.remove(key);
+}
+
+void VectorMapSingleton::remove(const Key<Lane> &key) {
+    lanes_.remove(key);
+}
+
+void VectorMapSingleton::remove(const Key<dtLane> &key) {
+    dtlanes_.remove(key);
+}
+
 std::ostream& operator<<(std::ostream& os, const Point& obj)
 {
     os << obj.pid << ",";

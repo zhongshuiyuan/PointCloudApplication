@@ -101,7 +101,7 @@ void OSGWidget::initSceneGraph() {
     //locator
     osg::ref_ptr<osgEarth::Util::ObjectLocatorNode> locator = new osgEarth::Util::ObjectLocatorNode(map_node_->getMap());
     locator->setName("locator");
-    locator->getLocator()->setPosition(osg::Vec3d(ground_center_location.y(), ground_center_location.x(), ground_center_location.z() + 0.8));
+    locator->getLocator()->setPosition(osg::Vec3d(ground_center_location.y(), ground_center_location.x(), ground_center_location.z() + 1.8));
     sky_node->addChild(locator);
 
     //others

@@ -43,6 +43,7 @@ EditorDialog::~EditorDialog() {
 }
 
 void EditorDialog::initUI() {
+    std::cout << "initUI" << std::endl;
     this->setWindowTitle("ItemEditDialog");
     this->setMaximumSize(210, 300);
     this->setAttribute(Qt::WA_DeleteOnClose);
@@ -100,27 +101,12 @@ void EditorDialog::initUI() {
         connect(save_button, SIGNAL(clicked()), this, SLOT(save()));
         layout->addWidget(save_button, type_name_list.size() + fields_name.size(), 0, 1, 1);
 
-        auto cancel_button = new QPushButton("cancel", this);
+        auto cancel_button = new QPushButton("delete", this);
         cancel_button->setAutoDefault(true);
         cancel_button->setFixedWidth(85);
-        connect(cancel_button, SIGNAL(clicked()), this, SLOT(close()));
+        connect(cancel_button, SIGNAL(clicked()), this, SLOT(deleteItem()));
         layout->addWidget(cancel_button, type_name_list.size() + fields_name.size(), 1, 1, 1);
     }
-}
-
-void EditorDialog::save() {
-    QStringList textInfo;
-    textInfo.append(type_name_list[type_]);
-
-    for (int i = 0; i < fields_vec[type_].size(); ++i) {
-        QString objectName = "text" + QString::number(i);
-        auto text = this->findChild<QLineEdit*>(objectName);
-
-        textInfo.append(text->text());
-    }
-
-    emit postItemInfo(textInfo);
-    this->close();
 }
 
 void EditorDialog::buttonsToggled(int index, bool checked) {
@@ -134,4 +120,27 @@ void EditorDialog::buttonsToggled(int index, bool checked) {
         }
         type_ = index;
     }
+}
+
+void EditorDialog::save() {
+    QStringList textInfo;
+    textInfo.append(type_name_list[type_]);
+
+    for (int i = 0; i < fields_vec[type_].size(); ++i) {
+        QString objectName = "text" + QString::number(i);
+        auto text = this->findChild<QLineEdit*>(objectName);
+
+        textInfo.append(text->text());
+    }
+    qDebug() << "textInfo:" << textInfo;
+    emit postItemInfo(textInfo);
+    this->close();
+}
+
+void EditorDialog::deleteItem() {
+    QString itemType = type_name_list[type_];
+    qDebug() << "itemType:" << itemType;
+
+    emit deleteItemInfo(itemType);
+    this->close();
 }

@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <algorithm> // for copy
 #include <iterator> // for ostream_iterator
+#include <initializer_list>
 
 #include <osg/ValueObject>
 #include <osg/ShapeDrawable>
@@ -61,24 +62,12 @@ bool SelectEditor::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdap
 }
 
 void SelectEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) {
-
     if (ea.getButton() == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
-        double w = 1.5f;
-        double h = 1.5f;
-
-//        osg::ref_ptr<osgUtil::PolytopeIntersector> picker = new osgUtil::PolytopeIntersector(
-//                osgUtil::Intersector::WINDOW, _mx - w, _my - h, _mx + w, _my + h);
-//        osgUtil::IntersectionVisitor iv(picker);
         osg::ref_ptr<osgUtil::LineSegmentIntersector> picker = new osgUtil::LineSegmentIntersector
                 (osgUtil::Intersector::PROJECTION, ea.getXnormalized(), ea.getYnormalized());
         osgUtil::IntersectionVisitor iv(picker.get());
-
-        //only intersect with vmap_node;
-        //root_node_->setSingleChildOn(root_node_->getChildIndex(vmap_node_));
         view->getCamera()->accept(iv);
-        //root_node_->setAllChildrenOn();
 
-        //intersection check
         cleanUp();
         bool has_intersected = false;
         if (picker->containsIntersections()) {
@@ -97,6 +86,7 @@ void SelectEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view)
                     //outline effect
                     {
                         osg::ref_ptr<osgFX::Outline> outline = new osgFX::Outline;
+                        outline->setName("outline_node");
                         outline->setWidth(6);
                         outline->addChild(node);
                         temp_node_->addChild(outline);
@@ -104,8 +94,15 @@ void SelectEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view)
 
                     //fields
                     QStringList itemInfo = VMapDrawable::getNodeValue(node);
+                    std::cout << "selectItem: ";
+                    for(const QString& info : itemInfo) {
+                        std::cout << info.toStdString() << " " ;
+                    }
+                    std::cout << std::endl;
+
                     emit selectItem(itemInfo);
                     has_intersected = true;
+                    break;
                 }
             }
         }
@@ -122,6 +119,7 @@ void SelectEditor::cleanUp() {
 }
 
 void SelectEditor::receiveItemInfo(QStringList itemInfo) {
+    TRACER;
     if (itemInfo.empty() || itemInfo.size() < 4) return;
     //set value
     std::string item_type = itemInfo[0].toStdString();
@@ -134,20 +132,21 @@ void SelectEditor::receiveItemInfo(QStringList itemInfo) {
     //set Node Value
     VMapDrawable vMapDrawable(root_node_);
     if (item_type == "CrossWalk") {
-        CrossWalk false_item;
-        false_item.type = field1;
-        false_item.bdid = field2;
-        vMapDrawable.setNodeValue(false_item, selected_node_.get());
+        CrossWalk item;
+        setItemValue(item, field1, field2);
+        vMapDrawable.setNodeValue(item, selected_node_.get());
     } else if (item_type == "StopLine") {
-        StopLine false_item;
-        false_item.tlid = field1;
-        false_item.signid = field2;
-        vMapDrawable.setNodeValue(false_item, selected_node_.get());
+        StopLine item;
+        setItemValue(item, field1, field2);
+        vMapDrawable.setNodeValue(item, selected_node_.get());
+    } else if (item_type == "RoadEdge") {
+        RoadEdge item;
+        setItemValue(item, field1, field2);
+        vMapDrawable.setNodeValue(item, selected_node_.get());
     } else if (item_type == "Lane") {
-        Lane false_item;
-        false_item.lcnt = field1;
-        false_item.lno = field2;
-        vMapDrawable.setNodeValue(false_item, selected_node_.get());
+        Lane item;
+        setItemValue(item, field1, field2);
+        vMapDrawable.setNodeValue(item, selected_node_.get());
     } else return; //Uncertain
 
     //update vmap
@@ -162,8 +161,7 @@ void SelectEditor::receiveItemInfo(QStringList itemInfo) {
         size_t lnid = start_id;
         while (lnid <= end_id && lnid != 0) {
             Lane lane = VectorMapSingleton::getInstance()->findByID(Key<Lane>(lnid));
-            lane.lcnt = field1;
-            lane.lno = field2;
+            setItemValue(lane, field1, field2);
             update_lanes.push_back(lane);
 
             lnid = lane.flid;
@@ -181,8 +179,7 @@ void SelectEditor::receiveItemInfo(QStringList itemInfo) {
 
         std::vector<StopLine> stop_lines = generate<StopLine, Lane>(start_id, end_id, index, lanes);
         for(auto& obj : stop_lines) {
-            obj.tlid = field1;
-            obj.signid = field2;
+            setItemValue(obj, field1, field2);
         }
         VectorMapSingleton::getInstance()->update(stop_lines);
     } else if (item_type == "Crosswalk") {
@@ -190,8 +187,7 @@ void SelectEditor::receiveItemInfo(QStringList itemInfo) {
 
         std::vector<CrossWalk> cross_walks = generate<CrossWalk, Lane>(start_id, end_id, index, lanes);
         for(auto& obj : cross_walks) {
-            obj.type = field1;
-            obj.bdid = field2;
+            setItemValue(obj, field1, field2);
         }
         VectorMapSingleton::getInstance()->update(cross_walks);
     } else if (item_type == "RoadEdge") {
@@ -200,6 +196,173 @@ void SelectEditor::receiveItemInfo(QStringList itemInfo) {
         std::vector<RoadEdge> road_edges = generate<RoadEdge, Lane>(start_id, end_id, index, lanes);
         VectorMapSingleton::getInstance()->update(road_edges);
     }
+}
+
+void SelectEditor::deleteTargetItem(QString itemType) {
+    TRACER;
+    int start_id, end_id;
+    start_id = end_id = 0;
+    selected_node_->getUserValue("start_id", start_id);
+    selected_node_->getUserValue("end_id", end_id);
+    std::cout << "item_type: " << itemType.toStdString() << " start id: " << start_id << " end id: " << end_id << std::endl;
+
+    //remove node
+    {
+        size_t parent_num = selected_node_->getNumParents();
+        for(int i = 0 ; i < parent_num; i++) {
+            osg::ref_ptr<osg::Node> parent = selected_node_->getParent(i);
+            std::cout << "parent:" << parent->getName() << std::endl;
+            osg::ref_ptr<osg::Switch> parent_node = dynamic_cast<osg::Switch*>(parent.get());
+            parent_node->removeChild(selected_node_.get());
+            break;
+        }
+        cleanUp();
+    }
+
+    //remove data
+    if (itemType == "Lane") {
+        deleteLane(start_id, end_id);
+    } else if (itemType == "StopLine") {
+        deleteStopLine(start_id, end_id);
+    } else if (itemType == "RoadEdge") {
+        deleteRoadEdge(start_id, end_id);
+    } else if (itemType == "CrossWalk") {
+        deleteCrossWalk(start_id);
+    } else if (itemType == "Uncertain") {
+        deleteLine(start_id, end_id);
+    }
+}
+
+void SelectEditor::deleteRoadEdge(int head_id, int tail_id) {
+    size_t id = head_id;
+    while (id >= head_id && id <= tail_id && id != 0) {
+        Line line = VectorMapSingleton::getInstance()->findByID(Key<Line>(id));
+        std::cout << "delete roadEdge: " << id << std::endl;
+        std::vector<RoadEdge> roadEdges = VectorMapSingleton::getInstance()->findByFilter([&](const RoadEdge& edge) {
+            return edge.lid == id;
+        });
+        for(const auto& item : roadEdges) {
+            VectorMapSingleton::getInstance()->remove(Key<RoadEdge>(item.id));
+        }
+        VectorMapSingleton::getInstance()->remove(Key<Line>(id));
+        id++;
+    }
+}
+
+void SelectEditor::deleteStopLine(int head_id, int tail_id) {
+    size_t id = head_id;
+    while (id >= head_id && id <= tail_id && id != 0) {
+        Line line = VectorMapSingleton::getInstance()->findByID(Key<Line>(id));
+        std::cout << "delete stopLine: " << id << std::endl;
+        std::vector<StopLine> stopLines = VectorMapSingleton::getInstance()->findByFilter([&](const StopLine& stopLine) {
+            return stopLine.lid == id;
+        });
+        for(const auto& item : stopLines) {
+            VectorMapSingleton::getInstance()->remove(Key<StopLine>(item.id));
+        }
+        VectorMapSingleton::getInstance()->remove(Key<Line>(id));
+        id++;
+    }
+}
+
+void SelectEditor::deleteCrossWalk(int id) {
+    std::cout << "you should delete crosswalk here" << std::endl;
+}
+
+void SelectEditor::deleteLine(int head_id, int tail_id) {
+    size_t id = head_id;
+    while (id >= head_id && id <= tail_id && id != 0) {
+        Line line = VectorMapSingleton::getInstance()->findByID(Key<Line>(id));
+        std::cout << "delete line: " << id << std::endl;
+        VectorMapSingleton::getInstance()->remove(Key<Line>(id));
+        id++;
+    }
+}
+
+void SelectEditor::deleteLane(int head_id, int tail_id) {
+    //update function
+    static auto update = []( int id, std::initializer_list<size_t*> il) {
+        for(auto& ptr : il) {
+            if(id == *ptr) *ptr = 0;
+            break;
+        }
+    };
+
+    //backward connection
+    {
+        Lane head = VectorMapSingleton::getInstance()->findByID(Key<Lane>(head_id));
+        std::vector<size_t> connected_lane_id_vec = { head.blid, head.blid2, head.blid3, head.blid4};
+        for(size_t connected_lane_id : connected_lane_id_vec) {
+            if(connected_lane_id == 0) continue;
+            std::cout << "backward connection: " << connected_lane_id << std::endl;
+            Lane connected_lane = VectorMapSingleton::getInstance()->findByID(Key<Lane>(connected_lane_id));
+            update(head_id, { &connected_lane.flid4, &connected_lane.flid3,
+                               &connected_lane.flid2, &connected_lane.flid });
+        }
+    }
+    //forward connection
+    {
+        Lane tail = VectorMapSingleton::getInstance()->findByID(Key<Lane>(tail_id));
+        std::vector<size_t> connected_lane_id_vec = { tail.flid, tail.flid2, tail.flid3, tail.flid4 };
+        for(size_t connected_lane_id : connected_lane_id_vec) {
+            if(connected_lane_id == 0) continue;
+            std::cout << "forward connection: " << connected_lane_id << std::endl;
+            Lane connected_lane = VectorMapSingleton::getInstance()->findByID(Key<Lane>(connected_lane_id));
+            update(tail_id, { &connected_lane.blid4, &connected_lane.blid3,
+                             &connected_lane.blid2, &connected_lane.blid });
+        }
+    }
+
+    //selected lane
+    size_t lnid = head_id;
+    while (lnid >= head_id && lnid <= tail_id && lnid != 0) {
+        Lane lane = VectorMapSingleton::getInstance()->findByID(Key<Lane>(lnid));
+        //std::cout << "delete lane: " << lnid << std::endl;
+
+        VectorMapSingleton::getInstance()->remove(Key<Lane>(lnid));
+        VectorMapSingleton::getInstance()->remove(Key<dtLane>(lane.did));
+        lnid = lane.flid;
+    }
+}
+
+void SelectEditor::setItemValue(m_map::CrossWalk &obj, ...) const {
+    va_list ap;
+    va_start(ap, obj);
+
+    size_t field1 = va_arg(ap, size_t);
+    size_t field2 = va_arg(ap, size_t);
+    obj.type = field1;
+    obj.bdid = field2;
+
+    va_end(ap);
+}
+
+void SelectEditor::setItemValue(m_map::StopLine &obj, ...) const {
+    va_list ap;
+    va_start(ap, obj);
+
+    size_t field1 = va_arg(ap, size_t);
+    size_t field2 = va_arg(ap, size_t);
+    obj.tlid = field1;
+    obj.signid = field2;
+
+    va_end(ap);
+}
+
+void SelectEditor::setItemValue(m_map::RoadEdge &obj, ...) const {
+
+}
+
+void SelectEditor::setItemValue(m_map::Lane &obj, ...) const {
+    va_list ap;
+    va_start(ap, obj);
+
+    size_t field1 = va_arg(ap, size_t);
+    size_t field2 = va_arg(ap, size_t);
+    obj.lcnt = field1;
+    obj.lno = field2;
+
+    va_end(ap);
 }
 
 template <class T, class U>
@@ -250,21 +413,21 @@ size_t SelectEditor::calculateLinkID(const T& obj, const std::vector<U>& lanes) 
 
 template<class T>
 size_t SelectEditor::getObjectId(const T &obj) const {
-    size_t id = 0;
-
-    if (std::is_same<T,CrossWalk>::value) {
-        auto tmp = reinterpret_cast<const CrossWalk&>(obj);
-        Area area = VectorMapSingleton::getInstance()->findByID(Key<Area>(tmp.aid));
-        id = area.slid;
-    } else if (std::is_same<T,RoadEdge>::value){
-        auto tmp = reinterpret_cast<const RoadEdge&>(obj);
-        id = tmp.lid;
-    } else if (std::is_same<T,StopLine>::value){
-        auto tmp = reinterpret_cast<const StopLine&>(obj);
-        id = tmp.lid;
-    }
-
+    size_t id = getId(obj);
     return id;
+}
+
+size_t SelectEditor::getId(const CrossWalk &obj) const {
+    Area area = VectorMapSingleton::getInstance()->findByID(Key<Area>(obj.aid));
+    return area.slid;
+}
+
+size_t SelectEditor::getId(const RoadEdge &obj) const {
+    return obj.lid;
+}
+
+size_t SelectEditor::getId(const StopLine &obj) const {
+    return obj.lid;
 }
 
 double SelectEditor::distanceBewteen2DLineSegment(const osg::Vec3d& p1, const osg::Vec3d& p2,
@@ -328,4 +491,3 @@ double SelectEditor::distanceBewteen2DLineSegment(const osg::Vec3d& p1, const os
 
     return distance;
 }
-
