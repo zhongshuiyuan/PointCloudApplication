@@ -221,7 +221,6 @@ void MainWindow::saveFile() {
 }
 
 void MainWindow::receiveItem(QStringList itemInfo) {
-    TRACER;
     if (itemInfo.empty()) return;
 
     auto edit_widget = new EditorDialog(itemInfo, this);

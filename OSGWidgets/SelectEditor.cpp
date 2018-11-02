@@ -100,6 +100,24 @@ void SelectEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view)
                     }
                     std::cout << std::endl;
 
+                    //just for debug
+
+                    if(itemInfo.front() == "Lane") {
+                        int start_id, end_id;
+                        start_id = end_id = 0;
+                        selected_node_->getUserValue("start_id", start_id);
+                        selected_node_->getUserValue("end_id", end_id);
+                        std::cout << "-----------------------------" << std::endl;
+                        std::cout << "LnID,DID,BLID,FLID,BNID,FNID,JCT,BLID2,BLID3,BLID4,FLID2,FLID3,FLID4,"
+                                     "ClossID,Span,LCnt,Lno,LaneType,LimitVel,RefVel,RoadSecID,LaneChgFG,Start_End_tag"
+                                     << std::endl;
+                        Lane head = VectorMapSingleton::getInstance()->findByID(Key<Lane>(start_id));
+                        std::cout << "head: " << head << std::endl;
+                        Lane tail = VectorMapSingleton::getInstance()->findByID(Key<Lane>(end_id));
+                        std::cout << "tail: " << tail << std::endl;
+                        std::cout << "-----------------------------" << std::endl;
+                    }
+
                     emit selectItem(itemInfo);
                     has_intersected = true;
                     break;
@@ -177,7 +195,7 @@ void SelectEditor::receiveItemInfo(QStringList itemInfo) {
     if (item_type == "StopLine") {
         size_t index = VectorMapSingleton::getInstance()->getMaxStopLineIndex() + 1;
 
-        std::vector<StopLine> stop_lines = generate<StopLine, Lane>(start_id, end_id, index, lanes);
+        std::vector<StopLine> stop_lines = generate<StopLine>(start_id, end_id, index, lanes);
         for(auto& obj : stop_lines) {
             setItemValue(obj, field1, field2);
         }
@@ -185,7 +203,7 @@ void SelectEditor::receiveItemInfo(QStringList itemInfo) {
     } else if (item_type == "Crosswalk") {
         size_t index = VectorMapSingleton::getInstance()->getMaxCrossWalkIndex() + 1;
 
-        std::vector<CrossWalk> cross_walks = generate<CrossWalk, Lane>(start_id, end_id, index, lanes);
+        std::vector<CrossWalk> cross_walks = generate<CrossWalk>(start_id, end_id, index, lanes);
         for(auto& obj : cross_walks) {
             setItemValue(obj, field1, field2);
         }
@@ -193,7 +211,7 @@ void SelectEditor::receiveItemInfo(QStringList itemInfo) {
     } else if (item_type == "RoadEdge") {
         size_t index = VectorMapSingleton::getInstance()->getMaxRoadEdgeIndex() + 1;
 
-        std::vector<RoadEdge> road_edges = generate<RoadEdge, Lane>(start_id, end_id, index, lanes);
+        std::vector<RoadEdge> road_edges = generate<RoadEdge>(start_id, end_id, index, lanes);
         VectorMapSingleton::getInstance()->update(road_edges);
     }
 }
@@ -281,16 +299,20 @@ void SelectEditor::deleteLine(int head_id, int tail_id) {
 
 void SelectEditor::deleteLane(int head_id, int tail_id) {
     //update function
-    static auto update = []( int id, std::initializer_list<size_t*> il) {
+    auto update = []( int id, std::initializer_list<size_t*> il) {
         for(auto& ptr : il) {
-            if(id == *ptr) *ptr = 0;
-            break;
+            if(id == *ptr) {
+                *ptr = 0;
+                break;
+            }
         }
     };
 
+    std::vector<Lane> connected_lanes;
     //backward connection
     {
         Lane head = VectorMapSingleton::getInstance()->findByID(Key<Lane>(head_id));
+        std::cout << "head:" << head << std::endl;
         std::vector<size_t> connected_lane_id_vec = { head.blid, head.blid2, head.blid3, head.blid4};
         for(size_t connected_lane_id : connected_lane_id_vec) {
             if(connected_lane_id == 0) continue;
@@ -298,6 +320,7 @@ void SelectEditor::deleteLane(int head_id, int tail_id) {
             Lane connected_lane = VectorMapSingleton::getInstance()->findByID(Key<Lane>(connected_lane_id));
             update(head_id, { &connected_lane.flid4, &connected_lane.flid3,
                                &connected_lane.flid2, &connected_lane.flid });
+            connected_lanes.push_back(connected_lane);
         }
     }
     //forward connection
@@ -310,8 +333,10 @@ void SelectEditor::deleteLane(int head_id, int tail_id) {
             Lane connected_lane = VectorMapSingleton::getInstance()->findByID(Key<Lane>(connected_lane_id));
             update(tail_id, { &connected_lane.blid4, &connected_lane.blid3,
                              &connected_lane.blid2, &connected_lane.blid });
+            connected_lanes.push_back(connected_lane);
         }
     }
+    VectorMapSingleton::getInstance()->update(connected_lanes);
 
     //selected lane
     size_t lnid = head_id;
@@ -365,8 +390,8 @@ void SelectEditor::setItemValue(m_map::Lane &obj, ...) const {
     va_end(ap);
 }
 
-template <class T, class U>
-std::vector<T> SelectEditor::generate(size_t start_id, size_t end_id, size_t index, const std::vector<U>& lanes) const {
+template <class T>
+std::vector<T> SelectEditor::generate(size_t start_id, size_t end_id, size_t index, const std::vector<m_map::Lane>& lanes) const {
     std::vector<T> objects;
     size_t lid = start_id;
     while (lid <= end_id) {
@@ -381,8 +406,8 @@ std::vector<T> SelectEditor::generate(size_t start_id, size_t end_id, size_t ind
     return objects;
 }
 
-template <class T, class U>
-size_t SelectEditor::calculateLinkID(const T& obj, const std::vector<U>& lanes) const {
+template <class T>
+size_t SelectEditor::calculateLinkID(const T& obj, const std::vector<m_map::Lane>& lanes) const {
     size_t lid = getObjectId(obj);
 
     Line line = VectorMapSingleton::getInstance()->findByID(Key<Line>(lid));

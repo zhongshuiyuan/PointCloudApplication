@@ -34,6 +34,7 @@ public:
 private:
     void updateIndex();
     bool isCurveLine(const point_pair_vec& points) const;
+    void connectionCheck(m_map::Lane& lane, size_t cur_lane_id, bool forward_connect);
     std::vector<osg::Vec3d> calculateInterpolationPoints(const osg::Vec3d& start_point, const osg::Vec3d& end_point) const;
     bool clockwiseJudgement(const m_map::Lane& lane, const m_map::Node& node);
     bool isClockWiseOrNot(const osg::Vec3d& p1, const osg::Vec3d& p2, const osg::Vec3d& p3) const;

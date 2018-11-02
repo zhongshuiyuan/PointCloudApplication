@@ -76,7 +76,9 @@ private:
     osg::Geode* readTXTDataFromFile(const QFileInfo& file_info) const;
     osg::Geode* addIntensityPointCloud(const osg::ref_ptr<osg::Vec3Array>& vertices,
             const std::vector<int>& intensity) const;
+
     void drawAllLines(); //test function
+    //private template function can be defined in .cpp file.
     template <class T>
     void drawTraceItems(const std::vector<T>& objects);
     template <class T>

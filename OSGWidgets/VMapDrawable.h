@@ -34,6 +34,8 @@ public:
     explicit VMapDrawable(osg::Switch* root);
     ~VMapDrawable() = default;
 
+    //public template function must be defined in .h file.
+    //meanwhile the function definition must see the parameters' definition(so only forward declaration is inadequate)
     template <class T>
     void drawVectorNode(const std::vector<Line>& lines, const T& object) {
         if (lines.empty()) return;
@@ -238,17 +240,11 @@ public:
                 std::string name = std::to_string(node.nid);
                 osg::Vec4f color(0.0, 1.0, 0.0, 0.5);
 
-                static bool tmp = true;
-                if(tmp) {
-                    std::cout << "node name:" << name << std::endl;
-                    tmp = false;
-                }
-
-                node_text_node->addChild(drawTextGeode(pos, name, color, 0.2));
+                //node_text_node->addChild(drawTextGeode(pos, name, color, 0.2));
             }
 
             osg::ref_ptr<osg::Switch> lane_text_node = dynamic_cast<osg::Switch*>(NodeTreeSearch::findNodeWithName(root_node_, lane_text_node_name));
-            for (const auto& lane : lanes) {
+            for (const auto& lane : { lanes.front(), lanes.back()} ) {
                 const auto& backward_node = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.bnid));
                 const auto& forward_node = VectorMapSingleton::getInstance()->findByID(Key<Node>(lane.fnid));
 
@@ -259,14 +255,9 @@ public:
                 osg::Vec3d pos2(forward_point.ly, forward_point.bx, forward_point.h);
 
                 osg::Vec3d pos = ( pos1 + pos2 ) / 2;
-                std::string name = std::to_string(lane.lnid);
+                int id = static_cast<int>(lane.lnid);
+                std::string name = std::to_string(id);
                 osg::Vec4f color(1.0, 0.0, 0.0, 0.5);
-
-                static bool tmp2 = true;
-                if(tmp2) {
-                    std::cout << "lane name:" << name << std::endl;
-                    tmp2 = false;
-                }
 
                 lane_text_node->addChild(drawTextGeode(pos, name, color, 0.2));
             }

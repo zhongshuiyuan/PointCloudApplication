@@ -36,10 +36,11 @@ public:
     void pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view);
 
 private:
-    template <class T, class U>
-    std::vector<T> generate(size_t start_id, size_t end_id, size_t index, const std::vector<U>& lanes) const;
-    template <class T, class U>
-    size_t calculateLinkID(const T& obj, const std::vector<U>& lanes) const;
+    //private template function can be defined in .cpp file.
+    template <class T>
+    std::vector<T> generate(size_t start_id, size_t end_id, size_t index, const std::vector<m_map::Lane>& lanes) const;
+    template <class T>
+    size_t calculateLinkID(const T& obj, const std::vector<m_map::Lane>& lanes) const;
 
     template <class T>
     size_t getObjectId(const T& obj) const;

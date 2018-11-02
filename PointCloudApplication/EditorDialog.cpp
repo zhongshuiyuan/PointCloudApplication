@@ -39,11 +39,11 @@ EditorDialog::EditorDialog(QStringList& itemInfo, QWidget *parent) :
 }
 
 EditorDialog::~EditorDialog() {
-    qDebug() << "dialog is safely deleted~";
+    //qDebug() << "dialog is safely deleted~";
 }
 
 void EditorDialog::initUI() {
-    std::cout << "initUI" << std::endl;
+
     this->setWindowTitle("ItemEditDialog");
     this->setMaximumSize(210, 300);
     this->setAttribute(Qt::WA_DeleteOnClose);

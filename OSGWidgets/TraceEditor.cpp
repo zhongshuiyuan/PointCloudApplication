@@ -311,8 +311,9 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                     });
 
                     //update connected lane
-                    if (!connected_lanes.empty()) {
-                        Lane& connected_lane = connected_lanes.back();
+                    for(Lane& connected_lane : connected_lanes) {
+                        // clarify the connection relationship
+                        connectionCheck(connected_lane, cur_min_lane_index, false);
 
                         //clockwise judgement
                         size_t jct = connected_lane.jct;
@@ -327,20 +328,12 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                             }
                         }
 
-                        if (connected_lane.flid == 0) {
-                            connected_lane.flid = cur_min_lane_index;
-                        }
-                        else if (connected_lane.flid2 == 0) {
-                            connected_lane.flid2 = cur_min_lane_index;
-                            connected_lane.jct = jct;
-                        }
-                        else {
-                            connected_lane.flid3 = cur_min_lane_index;
+                        if (connected_lane.flid != 0) {
                             connected_lane.jct = jct;
                         }
 
                         backward_lane_id = connected_lane.lnid;
-                        std::cout << "connected lane: " << connected_lane << std::endl;
+                        std::cout << "backward connected lane: " << connected_lane << std::endl;
                         update_lanes.push_back(connected_lane);
                     }
                 }
@@ -351,11 +344,9 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
                         return lane.bnid == forward_node.nid;
                     });
 
-                    if (!connected_lanes.empty()) {
-                        Lane& connected_lane = connected_lanes.back();
-                        if (connected_lane.blid == 0) { connected_lane.blid = cur_min_lane_index; }
-                        else if (connected_lane.blid2 == 0) { connected_lane.blid2 = cur_min_lane_index; }
-                        else { connected_lane.blid3 = cur_min_lane_index; }
+                    for(Lane& connected_lane : connected_lanes) {
+                        // clarify the connection relationship
+                        connectionCheck(connected_lane, cur_min_lane_index, true);
 
                         //clockwise judgement
                         size_t jct = connected_lane.jct;
@@ -372,7 +363,7 @@ void TraceEditor::pick(const osgGA::GUIEventAdapter& ea, osgViewer::View* view) 
 
                         connected_lane.jct = jct;
                         forward_lane_id = connected_lane.lnid;
-                        std::cout << "connected lane: " << connected_lane << std::endl;
+                        std::cout << "forward  connected lane: " << connected_lane << std::endl;
                         update_lanes.push_back(connected_lane);
                     }
                 }
@@ -434,6 +425,41 @@ void TraceEditor::updateIndex() {
     cur_point_index = VectorMapSingleton::getInstance()->getMaxNodeIndex() + 1;
 }
 
+void TraceEditor::connectionCheck(Lane &lane, size_t cur_lane_id, bool forward_connect) {
+    //valid check
+    //set the nonexistent id to 0
+    auto check = [](std::initializer_list<size_t*> il) {
+        for(auto& ptr : il) {
+            size_t id = *ptr;
+            Lane l = VectorMapSingleton::getInstance()->findByID(Key<Lane>(id));
+            *ptr = l.lnid; // equals to 0 if l doesn't exist
+        }
+    };
+
+    //set the value of fields relative to connection
+    auto update = [&](std::initializer_list<size_t*> il) {
+        for(auto& ptr : il) {
+            size_t id = *ptr;
+
+            if(id == 0) {
+                *ptr = cur_lane_id;
+                break;
+            }
+        }
+    };
+
+    std::initializer_list<size_t*> initializer_list;
+
+    if(forward_connect) {
+        initializer_list = { &lane.blid, &lane.blid2, &lane.blid3, &lane.blid4};
+    } else {
+        initializer_list = { &lane.flid, &lane.flid2, &lane.flid3, &lane.flid4};
+    }
+
+    check(initializer_list);
+    update(initializer_list);
+}
+
 std::vector<osg::Vec3d> TraceEditor::calculateInterpolationPoints(const osg::Vec3d& start_point, const osg::Vec3d& end_point) const {
     std::vector<osg::Vec3d> points;
 
@@ -443,7 +469,8 @@ std::vector<osg::Vec3d> TraceEditor::calculateInterpolationPoints(const osg::Vec
     direction.normalize();
 
     if (distance > 1.0) {
-        for (int i = 1; i < distance; ++i) {
+        //exclude the first point and avoid the last two points overlapping each other
+        for (int i = 1; i < distance - 0.5; ++i) {
             osg::Vec3d point = start_point + direction * i;
             points.push_back(point);
         }
